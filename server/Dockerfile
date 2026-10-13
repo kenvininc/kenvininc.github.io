@@ -11,4 +11,5 @@ COPY app.py entrypoint.sh ./
 COPY static ./static
 
 EXPOSE 8000
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Chạy qua sh để không phụ thuộc quyền execute (upload từ Windows sẽ mất chmod +x)
+ENTRYPOINT ["sh", "/app/entrypoint.sh"]

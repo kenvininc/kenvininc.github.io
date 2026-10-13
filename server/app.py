@@ -20,7 +20,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from starlette.background import BackgroundTask
 
-API_KEY = os.environ.get("API_KEY", "")
+API_KEY = os.environ.get("API_KEY", "").strip()  # .env sửa trên Windows có thể dính \r
 # Web serve cùng domain nên không cần CORS. Chỉ set khi gọi API từ domain khác.
 ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 COOKIES_FILE = os.environ.get("COOKIES_FILE", "/data/cookies.txt")
