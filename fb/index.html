@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>FB Video Saver</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #fff; --text: #1d1d1f; --muted: #6e6e73;
+    --border: #d2d2d7; --accent: #0071e3; --accent-text: #fff;
+    --ok: #1a7f37; --err: #c9372c;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000; --card: #1c1c1e; --text: #f5f5f7; --muted: #98989d;
+      --border: #38383a; --accent: #0a84ff; --ok: #30d158; --err: #ff453a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: max(16px, env(safe-area-inset-top)) 16px 32px;
+  }
+  main { max-width: 520px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 8px 0 16px; }
+  .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+  input {
+    width: 100%; font-size: 16px; padding: 12px; border-radius: 10px;
+    border: 1px solid var(--border); background: transparent; color: var(--text);
+  }
+  .row { display: flex; gap: 8px; }
+  .row input { flex: 1; }
+  button {
+    font-size: 16px; font-weight: 600; padding: 12px 16px; border: 0; border-radius: 10px;
+    background: var(--accent); color: var(--accent-text); cursor: pointer;
+  }
+  button.secondary { background: transparent; color: var(--accent); border: 1px solid var(--border); }
+  button:disabled { opacity: .5; }
+  .full { width: 100%; margin-top: 12px; }
+  #status { min-height: 1.4em; margin-top: 12px; font-size: 14px; color: var(--muted); word-break: break-word; }
+  #status.ok { color: var(--ok); }
+  #status.err { color: var(--err); }
+  video { width: 100%; border-radius: 10px; margin-top: 12px; background: #000; }
+  details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+  details .field { margin-top: 12px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>FB Video Saver</h1>
+
+  <div class="card">
+    <label for="url">Link Facebook</label>
+    <div class="row">
+      <input id="url" type="url" inputmode="url" autocomplete="off" placeholder="https://www.facebook.com/...">
+      <button id="paste" class="secondary" type="button">Paste</button>
+    </div>
+    <button id="go" class="full" type="button">Tải video</button>
+    <button id="save" class="full" type="button" hidden>Lưu vào Photos</button>
+    <div id="status"></div>
+    <video id="preview" controls playsinline hidden></video>
+  </div>
+
+  <div class="card">
+    <details id="settings">
+      <summary>Cài đặt server</summary>
+      <div class="field">
+        <label for="api">API URL</label>
+        <input id="api" type="url" autocomplete="off" placeholder="https://fb.example.com">
+      </div>
+      <div class="field">
+        <label for="key">API key</label>
+        <input id="key" type="password" autocomplete="off">
+      </div>
+      <button id="store" class="full secondary" type="button">Lưu cài đặt</button>
+    </details>
+  </div>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const els = { url: $("url"), paste: $("paste"), go: $("go"), save: $("save"), status: $("status"),
+                preview: $("preview"), api: $("api"), key: $("key"), store: $("store"), settings: $("settings") };
+  let file = null;
+  let previewUrl = null;
+
+  const storage = {
+    get(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+  };
+
+  els.api.value = storage.get("fbdl.api");
+  els.key.value = storage.get("fbdl.key");
+  if (!els.api.value || !els.key.value) els.settings.open = true;
+
+  // Hỗ trợ mở trang kiểu kenvin.me/fb/?url=<link>
+  const qsUrl = new URLSearchParams(location.search).get("url");
+  if (qsUrl) els.url.value = qsUrl;
+
+  function setStatus(text, cls = "") {
+    els.status.textContent = text;
+    els.status.className = cls;
+  }
+
+  function reset() {
+    file = null;
+    els.save.hidden = true;
+    els.preview.hidden = true;
+    if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+    els.preview.removeAttribute("src");
+  }
+
+  els.store.addEventListener("click", () => {
+    storage.set("fbdl.api", els.api.value.trim().replace(/\/+$/, ""));
+    storage.set("fbdl.key", els.key.value.trim());
+    els.settings.open = false;
+    setStatus("Đã lưu cài đặt", "ok");
+  });
+
+  els.paste.addEventListener("click", async () => {
+    try {
+      els.url.value = (await navigator.clipboard.readText()).trim();
+    } catch {
+      setStatus("Không đọc được clipboard, paste tay vào ô", "err");
+    }
+  });
+
+  function filenameFrom(res) {
+    const cd = res.headers.get("Content-Disposition") || "";
+    const m = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+    return m ? decodeURIComponent(m[1] || m[2]) : "facebook-video.mp4";
+  }
+
+  els.go.addEventListener("click", async () => {
+    const api = els.api.value.trim().replace(/\/+$/, "");
+    const key = els.key.value.trim();
+    const url = els.url.value.trim();
+    reset();
+    if (!api || !key) { els.settings.open = true; return setStatus("Chưa có API URL / API key", "err"); }
+    if (!url) return setStatus("Chưa có link", "err");
+
+    els.go.disabled = true;
+    setStatus("Server đang tải video, chờ chút...");
+    try {
+      const res = await fetch(api + "/api/download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": key },
+        body: JSON.stringify({ url }),
+      });
+      if (!res.ok) {
+        let msg = res.status + " " + res.statusText;
+        try { msg = (await res.json()).detail || msg; } catch {}
+        throw new Error(msg);
+      }
+      setStatus("Đang nhận file...");
+      const blob = await res.blob();
+      file = new File([blob], filenameFrom(res), { type: "video/mp4" });
+
+      previewUrl = URL.createObjectURL(file);
+      els.preview.src = previewUrl;
+      els.preview.hidden = false;
+
+      const mb = (file.size / 1048576).toFixed(1);
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        // Share sheet cần user tap mới, nên tách ra nút thứ hai.
+        els.save.hidden = false;
+        setStatus(`Xong (${mb} MB). Bấm "Lưu vào Photos" → chọn "Save Video".`, "ok");
+      } else {
+        const a = document.createElement("a");
+        a.href = previewUrl;
+        a.download = file.name;
+        a.click();
+        setStatus(`Xong (${mb} MB). Trình duyệt không hỗ trợ share file nên đã download thường.`, "ok");
+      }
+    } catch (e) {
+      setStatus("Lỗi: " + e.message, "err");
+    } finally {
+      els.go.disabled = false;
+    }
+  });
+
+  els.save.addEventListener("click", async () => {
+    if (!file) return;
+    try {
+      await navigator.share({ files: [file] });
+    } catch (e) {
+      if (e.name !== "AbortError") setStatus("Lỗi share: " + e.message, "err");
+    }
+  });
+})();
+</script>
+</body>
+</html>
