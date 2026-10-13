@@ -4,7 +4,7 @@ Web + API tải video Facebook (FastAPI + yt-dlp + ffmpeg), chạy trên Synolog
 Dùng qua web `https://dl.kenvin.biz/` hoặc iOS Shortcut.
 
 ```
-iPhone ──HTTPS──> dl.kenvin.biz (DSM Reverse Proxy) ──> fb-download:8686 ──> Facebook
+iPhone ──HTTPS──> Cloudflare ──> router :443 ──> nginx 192.168.1.48 ──HTTP──> NAS 192.168.1.45:8686
 ```
 
 ## API
@@ -39,25 +39,79 @@ Port 8686 là port host, nếu trùng với project khác thì đổi trong `doc
 
 iOS Safari cần HTTPS cho share sheet, và API key đi trong header, nên bắt buộc HTTPS.
 
-**DNS** (tại nơi quản lý DNS của `kenvin.biz`):
-- NAS có IP public tĩnh: record `A` `dl` → IP public đó.
-- IP public động: record `CNAME` `dl` → hostname DDNS của NAS
-  (DSM: Control Panel → External Access → DDNS, ví dụ `xxx.synology.me`).
-- Kiểm tra: `nslookup dl.kenvin.biz` phải ra đúng IP public của mạng có NAS.
+### 2.1 Kiểm tra trước
 
-**Router/firewall**: forward TCP 443 (và 80 nếu cấp Let's Encrypt qua HTTP challenge) về NAS.
-Không cần mở 8686 ra ngoài.
+Từ máy nginx (192.168.1.48):
 
-**Reverse proxy**: DSM 7 → Control Panel → Login Portal → Advanced → Reverse Proxy → Create
-- Source: `HTTPS`, hostname `dl.kenvin.biz`, port `443`
-- Destination: `HTTP`, `localhost`, port `8686`
-- Nếu có phần timeout trong Advanced Settings của rule: tăng lên ~300s,
-  vì video dài có thể tải lâu hơn timeout mặc định của proxy.
+```
+curl http://192.168.1.45:8686/api/health
+```
 
-**Certificate**: Control Panel → Security → Certificate → Add → Let's Encrypt cho `dl.kenvin.biz`,
-rồi Settings → gán certificate này cho reverse proxy `dl.kenvin.biz`.
+Phải ra `{"ok":true,...}`. Nếu không được thì kiểm tra DSM firewall
+(Control Panel → Security → Firewall) có chặn 8686 không.
+Nên giới hạn 8686 chỉ cho 192.168.1.48 vào.
 
-Kiểm tra từ 4G (ngoài LAN): `https://dl.kenvin.biz/api/health`.
+### 2.2 Cloudflare DNS (`kenvin.biz`)
+
+DNS → Records → Add record:
+- Type `A`, Name `dl`, IPv4 = IP public của mạng có nginx, Proxy status **Proxied** (mây cam).
+- Nếu đã có subdomain khác trỏ về cùng nginx này thì dùng cùng IP đó
+  (hoặc `CNAME dl → subdomain đó`).
+
+SSL/TLS → mode **Full (strict)** nếu nginx có certificate hợp lệ cho `dl.kenvin.biz`
+(Let's Encrypt hoặc Cloudflare Origin Certificate). Không dùng **Flexible**.
+
+Giới hạn khi để Proxied:
+- Cloudflare trả **524** nếu origin không trả byte nào trong 100 giây. API này tải xong video
+  rồi mới trả file, nên video quá dài có thể bị 524. Video/Reels thông thường không bị.
+- Bot Fight Mode / Security Level cao có thể trả trang challenge cho Shortcut
+  (Shortcut không phải trình duyệt). Shortcut nhận về HTML thay vì video thì kiểm tra Security → Events.
+
+### 2.3 Nginx 192.168.1.48
+
+**Nginx Proxy Manager**: Add Proxy Host
+- Domain: `dl.kenvin.biz`
+- Scheme `http`, Forward Hostname `192.168.1.45`, Port `8686`
+- Block Common Exploits: bật
+- SSL: chọn/cấp certificate cho `dl.kenvin.biz`, bật Force SSL
+- Advanced → Custom Nginx Configuration:
+
+```
+proxy_read_timeout 300s;
+proxy_send_timeout 300s;
+proxy_buffering off;
+```
+
+**Nginx thường**:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name dl.kenvin.biz;
+
+    ssl_certificate     /path/to/dl.kenvin.biz/fullchain.pem;
+    ssl_certificate_key /path/to/dl.kenvin.biz/privkey.pem;
+
+    location / {
+        proxy_pass http://192.168.1.45:8686;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_buffering off;
+    }
+}
+```
+
+`nginx -t` trước, OK rồi mới `nginx -s reload` (reload không làm rớt các site đang chạy,
+nhưng config lỗi thì reload sẽ không áp dụng).
+
+`proxy_buffering off` để nginx đẩy file thẳng về client, không ghi tạm ra disk của máy nginx.
+
+### 2.4 Test
+
+Từ 4G (ngoài LAN): `https://dl.kenvin.biz/api/health`.
 
 ## 3. Web
 
