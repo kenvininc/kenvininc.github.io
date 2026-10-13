@@ -47,6 +47,7 @@
   video { width: 100%; border-radius: 10px; margin-top: 12px; background: #000; }
   details summary { cursor: pointer; color: var(--muted); font-size: 14px; }
   details .field { margin-top: 12px; }
+  .note { font-size: 12px; color: var(--muted); margin: 12px 0 0; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -64,6 +65,7 @@
     <button id="save" class="full" type="button" hidden>Lưu vào Photos</button>
     <div id="status"></div>
     <video id="preview" controls playsinline hidden></video>
+    <p class="note">Chỉ tải được video public. Vui lòng chỉ tải video bạn có quyền sử dụng.</p>
   </div>
 
   <div class="card">
@@ -74,7 +76,7 @@
         <input id="api" type="url" autocomplete="off" placeholder="https://dl.kenvin.biz">
       </div>
       <div class="field">
-        <label for="key">API key</label>
+        <label for="key" id="key-label">API key</label>
         <input id="key" type="password" autocomplete="off">
       </div>
       <button id="store" class="full secondary" type="button">Lưu cài đặt</button>
@@ -97,7 +99,19 @@
 
   els.api.value = storage.get("fbdl.api");
   els.key.value = storage.get("fbdl.key");
-  if (!els.key.value) els.settings.open = true;
+  let authRequired = true;
+
+  const apiBase = () => els.api.value.trim().replace(/\/+$/, "") || location.origin;
+
+  // Hỏi server có bắt buộc key không (public mode thì không).
+  const healthReady = fetch(apiBase() + "/api/health")
+    .then((r) => r.json())
+    .then((h) => {
+      authRequired = h.auth_required !== false;
+      if (!authRequired) $("key-label").textContent = "API key (không bắt buộc)";
+      else if (!els.key.value) els.settings.open = true;
+    })
+    .catch(() => { if (!els.key.value) els.settings.open = true; });
 
   // Hỗ trợ mở trang kiểu dl.kenvin.biz/?url=<link>
   const qsUrl = new URLSearchParams(location.search).get("url");
@@ -138,11 +152,12 @@
   }
 
   els.go.addEventListener("click", async () => {
-    const api = els.api.value.trim().replace(/\/+$/, "") || location.origin;
+    await healthReady;
+    const api = apiBase();
     const key = els.key.value.trim();
     const url = els.url.value.trim();
     reset();
-    if (!key) { els.settings.open = true; return setStatus("Chưa nhập API key", "err"); }
+    if (!key && authRequired) { els.settings.open = true; return setStatus("Chưa nhập API key", "err"); }
     if (!url) return setStatus("Chưa có link", "err");
 
     els.go.disabled = true;
@@ -150,7 +165,7 @@
     try {
       const res = await fetch(api + "/api/download", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": key },
+        headers: { "Content-Type": "application/json", ...(key ? { "X-API-Key": key } : {}) },
         body: JSON.stringify({ url }),
       });
       if (!res.ok) {

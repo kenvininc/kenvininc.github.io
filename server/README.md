@@ -152,14 +152,34 @@ Nếu Facebook không hiện shortcut trong share sheet thì copy link rồi ch�
   và Facebook có thể khoá tài khoản nếu thấy hoạt động bất thường.
 - Chỉ hỗ trợ video. Bài post chỉ có ảnh thì yt-dlp không tải được.
 
+## Public mode (không cần API key)
+
+Thêm vào `.env` rồi restart container:
+
+```
+PUBLIC_MODE=1
+```
+
+Khi bật:
+- Khách không cần key. Mỗi IP tải tối đa `PUBLIC_RATE_LIMIT` lần/giờ, file tối đa `PUBLIC_MAX_FILESIZE_MB`.
+- Server đang đủ `MAX_CONCURRENT` job thì khách nhận 503 "đang bận" ngay, không xếp hàng.
+- Khách **không** được dùng `cookies.txt`, chỉ tải được video public.
+- Request có API key đúng (Shortcut của anh) vẫn không giới hạn, được dùng cookies, và chờ slot nếu đang bận.
+- IP khách lấy từ header `CF-Connecting-IP` (Cloudflare). Nếu ai đó gọi thẳng vào IP public
+  bỏ qua Cloudflare thì header này giả được. Muốn chặn thì cho NPM chỉ nhận traffic từ dải IP Cloudflare.
+- Rate limit lưu trong RAM, restart container là reset.
+
 ## Biến môi trường
 
 | Biến | Mặc định | |
 |---|---|---|
-| `API_KEY` | (bắt buộc) | Key cho client |
+| `API_KEY` | (bắt buộc nếu không public) | Key cho client |
 | `ALLOWED_ORIGINS` | (trống) | CORS, chỉ cần khi web ở domain khác gọi API |
 | `MAX_FILESIZE_MB` | `500` | Giới hạn dung lượng video |
 | `MAX_CONCURRENT` | `2` | Số job tải đồng thời |
 | `DOWNLOAD_TIMEOUT` | `300` | Giây |
 | `YTDLP_AUTO_UPDATE` | `1` | Update yt-dlp mỗi lần container start |
 | `COOKIES_FILE` | `/data/cookies.txt` | |
+| `PUBLIC_MODE` | `0` | `1` = không cần key |
+| `PUBLIC_RATE_LIMIT` | `10` | Lần tải / giờ / IP cho khách |
+| `PUBLIC_MAX_FILESIZE_MB` | `200` | Giới hạn dung lượng cho khách |
