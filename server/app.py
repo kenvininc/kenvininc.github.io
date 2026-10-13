@@ -1,7 +1,7 @@
 """Facebook video downloader API (FastAPI + yt-dlp).
 
 Nhận link Facebook, tải video bằng yt-dlp và trả file .mp4 về cho client
-(web trên kenvin.me hoặc iOS Shortcut).
+(web serve ở "/" hoặc iOS Shortcut).
 """
 
 import asyncio
@@ -21,7 +21,8 @@ from pydantic import BaseModel
 from starlette.background import BackgroundTask
 
 API_KEY = os.environ.get("API_KEY", "")
-ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "https://kenvin.me").split(",") if o.strip()]
+# Web serve cùng domain nên không cần CORS. Chỉ set khi gọi API từ domain khác.
+ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("ALLOWED_ORIGINS", "").split(",") if o.strip()]
 COOKIES_FILE = os.environ.get("COOKIES_FILE", "/data/cookies.txt")
 MAX_FILESIZE_MB = int(os.environ.get("MAX_FILESIZE_MB", "500"))
 MAX_CONCURRENT = int(os.environ.get("MAX_CONCURRENT", "2"))
@@ -39,14 +40,17 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 if not API_KEY:
     raise RuntimeError("API_KEY chưa được set")
 
-app = FastAPI(title="fb-download", docs_url=None, redoc_url=None)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["GET", "POST"],
-    allow_headers=["X-API-Key", "Content-Type"],
-    expose_headers=["Content-Disposition"],
-)
+STATIC_DIR = Path(__file__).parent / "static"
+
+app = FastAPI(title="fb-download", docs_url=None, redoc_url=None, openapi_url=None)
+if ALLOWED_ORIGINS:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=ALLOWED_ORIGINS,
+        allow_methods=["GET", "POST"],
+        allow_headers=["X-API-Key", "Content-Type"],
+        expose_headers=["Content-Disposition"],
+    )
 
 semaphore = asyncio.Semaphore(MAX_CONCURRENT)
 
@@ -113,6 +117,11 @@ async def handle(url: str, key: str | None) -> FileResponse:
         log.exception("unexpected error")
         raise HTTPException(status_code=500, detail=str(e))
     return FileResponse(path, media_type="video/mp4", filename=path.name, background=cleanup)
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    return FileResponse(STATIC_DIR / "index.html", media_type="text/html")
 
 
 @app.get("/api/health")

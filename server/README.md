@@ -1,16 +1,17 @@
 # fb-download
 
-Backend tải video Facebook (FastAPI + yt-dlp + ffmpeg), chạy trên Synology Container Manager.
-Client dùng được: web `https://kenvin.me/fb/` hoặc iOS Shortcut.
+Web + API tải video Facebook (FastAPI + yt-dlp + ffmpeg), chạy trên Synology Container Manager.
+Dùng qua web `https://dl.kenvin.biz/` hoặc iOS Shortcut.
 
 ```
-iPhone ──HTTPS──> DSM Reverse Proxy ──> fb-download:8686 ──> Facebook
+iPhone ──HTTPS──> dl.kenvin.biz (DSM Reverse Proxy) ──> fb-download:8686 ──> Facebook
 ```
 
 ## API
 
 | Method | Path | Ghi chú |
 |---|---|---|
+| GET | `/` | Trang web |
 | GET | `/api/health` | Kiểm tra server + version yt-dlp |
 | POST | `/api/download` | Body `{"url": "..."}`, header `X-API-Key` → trả file mp4 |
 | GET | `/api/download?url=...` | Như trên, header `X-API-Key` |
@@ -20,7 +21,7 @@ Chỉ nhận link `facebook.com`, `fb.watch`, `fb.com` (kể cả subdomain như
 ## 1. Deploy lên Synology
 
 1. File Station: tạo thư mục `/volume1/docker/fb-download`, copy các file trong `server/` vào đó
-   (`app.py`, `requirements.txt`, `Dockerfile`, `entrypoint.sh`, `docker-compose.yml`).
+   (`app.py`, `requirements.txt`, `Dockerfile`, `entrypoint.sh`, `docker-compose.yml`, thư mục `static/`).
 2. Tạo file `.env` từ `.env.example`, đổi `API_KEY` thành chuỗi random dài
    (ví dụ chạy `openssl rand -hex 24` trên máy bất kỳ).
 3. Tạo thư mục con `data/` (để trống, chỉ dùng khi cần cookies).
@@ -30,31 +31,38 @@ Chỉ nhận link `facebook.com`, `fb.watch`, `fb.com` (kể cả subdomain như
    - Source: *Use existing docker-compose.yml*
    - Next → Done. Lần đầu sẽ build image (cài ffmpeg), mất vài phút.
 5. Kiểm tra trong LAN: mở `http://<IP-NAS>:8686/api/health`, phải ra `{"ok":true,...}`.
+   Mở `http://<IP-NAS>:8686/` phải thấy trang web.
 
 Port 8686 là port host, nếu trùng với project khác thì đổi trong `docker-compose.yml`.
 
-## 2. Publish ra Internet qua HTTPS
+## 2. Publish ra `dl.kenvin.biz`
 
-Web `kenvin.me` chạy HTTPS nên backend cũng phải là HTTPS (browser chặn mixed content).
-Shortcut thì gọi được cả HTTP, nhưng vẫn nên dùng HTTPS vì API key đi trong header.
+iOS Safari cần HTTPS cho share sheet, và API key đi trong header, nên bắt buộc HTTPS.
 
-DSM 7: Control Panel → Login Portal → Advanced → **Reverse Proxy** → Create
+**DNS** (tại nơi quản lý DNS của `kenvin.biz`):
+- NAS có IP public tĩnh: record `A` `dl` → IP public đó.
+- IP public động: record `CNAME` `dl` → hostname DDNS của NAS
+  (DSM: Control Panel → External Access → DDNS, ví dụ `xxx.synology.me`).
+- Kiểm tra: `nslookup dl.kenvin.biz` phải ra đúng IP public của mạng có NAS.
 
-- Source: `HTTPS`, hostname ví dụ `fb.<domain-của-anh>`, port `443`
+**Router/firewall**: forward TCP 443 (và 80 nếu cấp Let's Encrypt qua HTTP challenge) về NAS.
+Không cần mở 8686 ra ngoài.
+
+**Reverse proxy**: DSM 7 → Control Panel → Login Portal → Advanced → Reverse Proxy → Create
+- Source: `HTTPS`, hostname `dl.kenvin.biz`, port `443`
 - Destination: `HTTP`, `localhost`, port `8686`
 - Nếu có phần timeout trong Advanced Settings của rule: tăng lên ~300s,
   vì video dài có thể tải lâu hơn timeout mặc định của proxy.
 
-Sau đó:
-- DNS: trỏ `fb.<domain>` về IP public của NAS (hoặc dùng DDNS của Synology).
-- Certificate: Control Panel → Security → Certificate, cấp Let's Encrypt cho hostname này
-  và gán cho reverse proxy rule.
-- Router/firewall: chỉ cần mở 443 về NAS nếu chưa mở. Không cần mở 8686 ra ngoài.
+**Certificate**: Control Panel → Security → Certificate → Add → Let's Encrypt cho `dl.kenvin.biz`,
+rồi Settings → gán certificate này cho reverse proxy `dl.kenvin.biz`.
+
+Kiểm tra từ 4G (ngoài LAN): `https://dl.kenvin.biz/api/health`.
 
 ## 3. Web
 
-Mở `https://kenvin.me/fb/` trên iPhone → **Cài đặt server** → nhập API URL
-(`https://fb.<domain>`) và API key → Lưu. Cài đặt nằm trong localStorage của Safari.
+Mở `https://dl.kenvin.biz/` trên iPhone → **Cài đặt** → nhập API key → Lưu
+(API URL để trống). Cài đặt nằm trong localStorage của Safari.
 
 Dùng: paste link → **Tải video** → **Lưu vào Photos** → chọn **Save Video**.
 Phải bấm 2 nút vì iOS chỉ cho mở share sheet ngay sau một lần tap.
@@ -68,7 +76,7 @@ Shortcuts → **+** → đặt tên ví dụ `FB Save`:
 1. Bấm (i) → bật **Show in Share Sheet**, Receive: chỉ chọn **URLs** (và **Text**).
    If there's no input: **Get Clipboard**.
 2. Action **Get Contents of URL**
-   - URL: `https://fb.<domain>/api/download`
+   - URL: `https://dl.kenvin.biz/api/download`
    - Method: `POST`
    - Headers: `X-API-Key` = `<API key>`
    - Request Body: `JSON`, field `url` (Text) = biến **Shortcut Input**
@@ -95,7 +103,7 @@ Nếu Facebook không hiện shortcut trong share sheet thì copy link rồi ch�
 | Biến | Mặc định | |
 |---|---|---|
 | `API_KEY` | (bắt buộc) | Key cho client |
-| `ALLOWED_ORIGINS` | `https://kenvin.me` | CORS cho web frontend |
+| `ALLOWED_ORIGINS` | (trống) | CORS, chỉ cần khi web ở domain khác gọi API |
 | `MAX_FILESIZE_MB` | `500` | Giới hạn dung lượng video |
 | `MAX_CONCURRENT` | `2` | Số job tải đồng thời |
 | `DOWNLOAD_TIMEOUT` | `300` | Giây |

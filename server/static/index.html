@@ -68,10 +68,10 @@
 
   <div class="card">
     <details id="settings">
-      <summary>Cài đặt server</summary>
+      <summary>Cài đặt</summary>
       <div class="field">
-        <label for="api">API URL</label>
-        <input id="api" type="url" autocomplete="off" placeholder="https://fb.example.com">
+        <label for="api">API URL (để trống = server này)</label>
+        <input id="api" type="url" autocomplete="off" placeholder="https://dl.kenvin.biz">
       </div>
       <div class="field">
         <label for="key">API key</label>
@@ -97,9 +97,9 @@
 
   els.api.value = storage.get("fbdl.api");
   els.key.value = storage.get("fbdl.key");
-  if (!els.api.value || !els.key.value) els.settings.open = true;
+  if (!els.key.value) els.settings.open = true;
 
-  // Hỗ trợ mở trang kiểu kenvin.me/fb/?url=<link>
+  // Hỗ trợ mở trang kiểu dl.kenvin.biz/?url=<link>
   const qsUrl = new URLSearchParams(location.search).get("url");
   if (qsUrl) els.url.value = qsUrl;
 
@@ -138,11 +138,11 @@
   }
 
   els.go.addEventListener("click", async () => {
-    const api = els.api.value.trim().replace(/\/+$/, "");
+    const api = els.api.value.trim().replace(/\/+$/, "") || location.origin;
     const key = els.key.value.trim();
     const url = els.url.value.trim();
     reset();
-    if (!api || !key) { els.settings.open = true; return setStatus("Chưa có API URL / API key", "err"); }
+    if (!key) { els.settings.open = true; return setStatus("Chưa nhập API key", "err"); }
     if (!url) return setStatus("Chưa có link", "err");
 
     els.go.disabled = true;
