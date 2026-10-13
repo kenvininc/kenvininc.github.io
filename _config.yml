@@ -1,0 +1,3 @@
+# GitHub Pages: không publish code backend
+exclude:
+  - server
