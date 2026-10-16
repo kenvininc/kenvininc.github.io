@@ -1,0 +1,15 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Tài khoản{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Tài khoản quản trị</h1><div class="actions"><a class="btn" href="{% url 'panel:user_add' %}">{% icon "plus" %} Thêm tài khoản</a></div></div>
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>Tên đăng nhập</th><th>Họ tên</th><th>Vai trò</th><th>Trạng thái</th><th>Đăng nhập gần nhất</th></tr></thead>
+  <tbody>
+  {% for u in users %}
+    <tr><td><a href="{% url 'panel:user_edit' u.pk %}"><strong>{{ u.username }}</strong></a>{% if u == request.user %} <span class="muted">(bạn)</span>{% endif %}</td>
+      <td>{{ u.first_name }}</td><td>{% for g in u.groups.all %}<span class="badge">{{ g.name }}</span> {% empty %}<span class="muted">Chưa có vai trò</span>{% endfor %}</td>
+      <td>{% if u.is_active %}<span class="badge badge-ok">Hoạt động</span>{% else %}<span class="badge badge-err">Đã khóa</span>{% endif %}</td>
+      <td class="muted">{{ u.last_login|date:"H:i d/m/Y"|default:"Chưa đăng nhập" }}</td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{% endblock %}

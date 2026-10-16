@@ -1,0 +1,12 @@
+{% extends "store/base.html" %}{% load shop %}
+{% block title %}Không tìm thấy trang | {{ site.shop_name }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:620px;padding:40px 16px">
+  <div class="empty">
+    {% icon "search" %}
+    <h1 style="font-size:22px">Không tìm thấy trang</h1>
+    <p>Trang bạn tìm có thể đã bị xóa hoặc đường dẫn không đúng.</p>
+    <a class="btn" href="{% url 'store:home' %}">Về trang chủ</a>
+  </div>
+</div>
+{% endblock %}

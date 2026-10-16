@@ -1,0 +1,15 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Thuộc tính{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Thuộc tính biến thể</h1><div class="actions"><a class="btn" href="{% url 'panel:attribute_add' %}">{% icon "plus" %} Thêm thuộc tính</a></div></div>
+<p class="muted">Thuộc tính là loại biến thể của sản phẩm, ví dụ: Dung tích, Màu sắc, Quy cách. Mỗi sản phẩm chọn 1 loại biến thể.</p>
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>Tên</th><th>Hiển thị ô màu</th><th class="num">Số sản phẩm dùng</th></tr></thead>
+  <tbody>
+  {% for a in attributes %}
+    <tr><td><a href="{% url 'panel:attribute_edit' a.pk %}"><strong>{{ a.name }}</strong></a></td><td>{% if a.is_color %}Có{% endif %}</td><td class="num">{{ a.n }}</td></tr>
+  {% empty %}
+    <tr class="empty-row"><td colspan="3">Chưa có thuộc tính. Ví dụ nên tạo: Dung tích, Màu sắc.</td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{% endblock %}

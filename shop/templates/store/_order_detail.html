@@ -1,0 +1,50 @@
+{% load shop %}
+<section class="panel-box">
+  <h2>Sản phẩm</h2>
+  <ul class="mini-lines">
+    {% for item in order.items.all %}
+    <li class="mini-line">
+      <span class="thumb">{% if item.image_url %}<img src="{{ item.image_url }}" alt="">{% endif %}<span class="q">{{ item.quantity }}</span></span>
+      <span>{{ item.product_name }}{% if item.variant_label %}<small>{{ item.variant_label }}</small>{% endif %}<small>{{ item.unit_price|vnd }} × {{ item.quantity }}</small></span>
+      <strong>{{ item.line_total|vnd }}</strong>
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="summary" style="position:static;border:0;padding:0">
+    <dl>
+      <dt>Tiền hàng</dt><dd>{{ order.subtotal|vnd }}</dd>
+      <dt>Giảm giá{% if order.coupon_code %} ({{ order.coupon_code }}){% endif %}</dt><dd>{% if order.discount_total %}-{{ order.discount_total|vnd }}{% else %}0 ₫{% endif %}</dd>
+      <dt>Phí giao hàng</dt><dd>{% if order.shipping_fee %}{{ order.shipping_fee|vnd }}{% else %}Miễn phí{% endif %}</dd>
+      <dt class="total-row">Tổng thanh toán</dt><dd>{{ order.total|vnd }}</dd>
+    </dl>
+  </div>
+</section>
+<section class="panel-box">
+  <h2>Giao đến</h2>
+  <dl class="kv">
+    <dt>Người nhận</dt><dd>{{ order.customer_name }}</dd>
+    <dt>Điện thoại</dt><dd>{{ order.phone }}</dd>
+    {% if order.email %}<dt>Email</dt><dd>{{ order.email }}</dd>{% endif %}
+    <dt>Địa chỉ</dt><dd>{{ order.address|linebreaksbr }}</dd>
+    {% if order.customer_note %}<dt>Ghi chú</dt><dd>{{ order.customer_note|linebreaksbr }}</dd>{% endif %}
+    <dt>Thanh toán</dt><dd>{{ order.get_payment_method_display }} — <span class="status-pill">{{ order.get_payment_status_display }}</span></dd>
+    {% if order.tracking_code %}<dt>Vận đơn</dt><dd>{{ order.carrier }} {{ order.tracking_code }}</dd>{% endif %}
+  </dl>
+</section>
+{% if order.payment_method == "bank_transfer" and order.payment_status == "unpaid" and order.status != "cancelled" %}
+<section class="bank-box">
+  <h2 style="font-size:17px">Thông tin chuyển khoản</h2>
+  {% if site.bank_transfer_ready %}
+  <dl class="kv">
+    <dt>Ngân hàng</dt><dd>{{ site.bank_name }}</dd>
+    <dt>Số tài khoản</dt><dd><strong>{{ site.bank_account_number }}</strong></dd>
+    <dt>Chủ tài khoản</dt><dd>{{ site.bank_account_name }}</dd>
+    <dt>Số tiền</dt><dd><strong>{{ order.total|vnd }}</strong></dd>
+    <dt>Nội dung</dt><dd><strong>{{ order.code }}</strong></dd>
+  </dl>
+  <p class="help" style="margin-bottom:0">Vui lòng ghi đúng nội dung chuyển khoản là mã đơn. Shop sẽ xác nhận khi nhận được tiền.</p>
+  {% else %}
+  <p>Vui lòng liên hệ {{ site.hotline }} để nhận thông tin chuyển khoản.</p>
+  {% endif %}
+</section>
+{% endif %}

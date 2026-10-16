@@ -1,0 +1,75 @@
+from django.urls import path
+
+from .views import auth, dashboard, excel, inventory, marketing, orders, products, taxonomy, users
+
+app_name = "panel"
+
+urlpatterns = [
+    path("", dashboard.dashboard, name="dashboard"),
+    path("dang-nhap/", auth.login_view, name="login"),
+    path("dang-xuat/", auth.logout_view, name="logout"),
+    path("doi-mat-khau/", auth.change_password, name="change_password"),
+    # Sản phẩm
+    path("san-pham/", products.product_list, name="products"),
+    path("san-pham/them/", products.product_add, name="product_add"),
+    path("san-pham/thao-tac/", products.product_bulk, name="product_bulk"),
+    path("san-pham/<int:pk>/", products.product_edit, name="product_edit"),
+    path("san-pham/<int:pk>/xoa/", products.product_delete, name="product_delete"),
+    path("san-pham/<int:pk>/anh/", products.product_images, name="product_images"),
+    path("danh-muc/", taxonomy.category_list, name="categories"),
+    path("danh-muc/them/", taxonomy.category_form, name="category_add"),
+    path("danh-muc/<int:pk>/", taxonomy.category_form, name="category_edit"),
+    path("danh-muc/<int:pk>/xoa/", taxonomy.category_delete, name="category_delete"),
+    path("thuong-hieu/", taxonomy.brand_list, name="brands"),
+    path("thuong-hieu/them/", taxonomy.brand_form, name="brand_add"),
+    path("thuong-hieu/<int:pk>/", taxonomy.brand_form, name="brand_edit"),
+    path("thuong-hieu/<int:pk>/xoa/", taxonomy.brand_delete, name="brand_delete"),
+    path("thuoc-tinh/", taxonomy.attribute_list, name="attributes"),
+    path("thuoc-tinh/them/", taxonomy.attribute_form, name="attribute_add"),
+    path("thuoc-tinh/<int:pk>/", taxonomy.attribute_form, name="attribute_edit"),
+    path("thuoc-tinh/<int:pk>/xoa/", taxonomy.attribute_delete, name="attribute_delete"),
+    # Kho & giá
+    path("ton-kho/", inventory.stock_list, name="stock"),
+    path("ton-kho/<int:pk>/", inventory.stock_adjust, name="stock_adjust"),
+    path("ton-kho/lich-su/", inventory.stock_history, name="stock_history"),
+    path("gia/lich-su/", inventory.price_history, name="price_history"),
+    path("gia/hang-loat/", inventory.bulk_price, name="bulk_price"),
+    # Excel
+    path("excel/nhap/", excel.import_page, name="import"),
+    path("excel/nhap/<int:pk>/", excel.import_preview, name="import_preview"),
+    path("excel/mau/", excel.import_template, name="import_template"),
+    path("excel/xuat/", excel.export, name="export"),
+    # Đơn hàng
+    path("don-hang/", orders.order_list, name="orders"),
+    path("don-hang/xuat-excel/", orders.order_export, name="order_export"),
+    path("don-hang/in/", orders.order_print_many, name="order_print_many"),
+    path("don-hang/<int:pk>/", orders.order_detail, name="order_detail"),
+    path("don-hang/<int:pk>/trang-thai/", orders.order_status, name="order_status"),
+    path("don-hang/<int:pk>/thanh-toan/", orders.order_payment, name="order_payment"),
+    path("don-hang/<int:pk>/van-chuyen/", orders.order_shipping, name="order_shipping"),
+    path("don-hang/<int:pk>/ghi-chu/", orders.order_note, name="order_note"),
+    path("don-hang/<int:pk>/nhap-kho/", orders.order_restock, name="order_restock"),
+    path("don-hang/<int:pk>/in/", orders.order_print, name="order_print"),
+    # Khuyến mãi & nội dung
+    path("khuyen-mai/", marketing.coupon_list, name="coupons"),
+    path("khuyen-mai/them/", marketing.coupon_form, name="coupon_add"),
+    path("khuyen-mai/<int:pk>/", marketing.coupon_form, name="coupon_edit"),
+    path("khuyen-mai/<int:pk>/xoa/", marketing.coupon_delete, name="coupon_delete"),
+    path("banner/", marketing.banner_list, name="banners"),
+    path("banner/them/", marketing.banner_form, name="banner_add"),
+    path("banner/<int:pk>/", marketing.banner_form, name="banner_edit"),
+    path("banner/<int:pk>/xoa/", marketing.banner_delete, name="banner_delete"),
+    path("banner/<int:pk>/bat-tat/", marketing.banner_toggle, name="banner_toggle"),
+    path("trang/", marketing.page_list, name="pages"),
+    path("trang/them/", marketing.page_form, name="page_add"),
+    path("trang/<int:pk>/", marketing.page_form, name="page_edit"),
+    path("trang/<int:pk>/xoa/", marketing.page_delete, name="page_delete"),
+    path("trang-chu/", marketing.home_config, name="home_config"),
+    path("cai-dat/", marketing.settings_view, name="settings"),
+    # Tài khoản
+    path("tai-khoan/", users.user_list, name="users"),
+    path("tai-khoan/them/", users.user_add, name="user_add"),
+    path("tai-khoan/<int:pk>/", users.user_edit, name="user_edit"),
+    path("tai-khoan/<int:pk>/mat-khau/", users.user_password, name="user_password"),
+    path("nhat-ky/", users.audit_list, name="audit"),
+]

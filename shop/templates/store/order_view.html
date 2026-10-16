@@ -1,0 +1,25 @@
+{% extends "store/base.html" %}{% load shop %}
+{% block title %}Đơn hàng {{ order.code }} | {{ site.shop_name }}{% endblock %}
+{% block meta_extra %}<meta name="robots" content="noindex">{% endblock %}
+{% block content %}
+<div class="container order-box">
+  <h1 class="page-title">Đơn hàng <span class="order-code" style="font-size:20px">{{ order.code }}</span></h1>
+  <p>Đặt lúc {{ order.created_at|date:"H:i d/m/Y" }} · Trạng thái: <span class="status-pill">{{ order.get_status_display }}</span></p>
+  {% if order.status == "cancelled" %}
+  <div class="alert alert-warning">{% icon "info" %} Đơn hàng đã hủy.</div>
+  {% elif order.status == "returned" %}
+  <div class="alert alert-warning">{% icon "info" %} Đơn hàng đã được hoàn/trả.</div>
+  {% else %}
+  {% with s=order.status %}
+  <ol class="timeline panel-box" aria-label="Tiến trình đơn hàng">
+    <li class="done">Đã đặt</li>
+    <li class="{% if s != 'new' %}done{% endif %}">Đã xác nhận</li>
+    <li class="{% if s == 'packing' or s == 'shipping' or s == 'completed' %}done{% endif %}">Đóng gói</li>
+    <li class="{% if s == 'shipping' or s == 'completed' %}done{% endif %}">Đang giao</li>
+    <li class="{% if s == 'completed' %}done{% endif %}">Hoàn tất</li>
+  </ol>
+  {% endwith %}
+  {% endif %}
+  {% include "store/_order_detail.html" %}
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Lịch sử giá{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Lịch sử thay đổi giá</h1><div class="actions"><a class="btn" href="{% url 'panel:bulk_price' %}">Cập nhật giá hàng loạt</a></div></div>
+<form method="get" class="filters">
+  <div class="field grow"><label for="q">SKU hoặc tên sản phẩm</label><input id="q" type="search" name="q" value="{{ request.GET.q }}"></div>
+  <button class="btn btn-secondary" type="submit">Lọc</button>
+</form>
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>Thời gian</th><th>Sản phẩm / SKU</th><th class="num">Giá bán cũ → mới</th><th class="num">Giá gốc cũ → mới</th><th>Nguồn</th><th>Lý do</th><th>Người thay đổi</th></tr></thead>
+  <tbody>
+  {% for h in page_obj %}
+    <tr><td class="nowrap muted">{{ h.changed_at|date:"d/m/Y H:i" }}</td>
+      <td>{{ h.variant.product.name }}{% if h.variant.value %} · {{ h.variant.value }}{% endif %}<br><span class="mono muted">{{ h.variant.sku }}</span></td>
+      <td class="num">{{ h.old_price|vnd|default:"—" }} → <strong>{{ h.new_price|vnd }}</strong></td>
+      <td class="num">{{ h.old_compare_at_price|vnd|default:"—" }} → {{ h.new_compare_at_price|vnd|default:"—" }}</td>
+      <td>{{ h.get_source_display }}</td><td>{{ h.reason }}</td><td>{{ h.changed_by.username|default:"—" }}</td></tr>
+  {% empty %}
+    <tr class="empty-row"><td colspan="7">Chưa có thay đổi giá.</td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{% include "panel/_pagination.html" %}
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "store/base.html" %}{% load shop %}
+{% block title %}{{ page.seo_title|default:page.title }} | {{ site.shop_name }}{% endblock %}
+{% block description %}{{ page.seo_description|default:page.body|truncatechars:160 }}{% endblock %}
+{% block meta_extra %}{% if is_preview %}<meta name="robots" content="noindex">{% endif %}{% endblock %}
+{% block preview %}{% if is_preview %}<div class="preview-bar"><div class="container">{% icon "eye" %} Bản xem trước — trang đang ở trạng thái Nháp, khách chưa nhìn thấy.</div></div>{% endif %}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:860px">
+  <h1 class="page-title">{{ page.title }}</h1>
+  {% if page.body %}
+  <div class="prose">{{ page.body|rich }}</div>
+  {% else %}
+  <div class="empty"><h2>Nội dung đang được cập nhật</h2>{% if site.hotline %}<p>Cần hỗ trợ vui lòng gọi {{ site.hotline }}.</p>{% endif %}</div>
+  {% endif %}
+  {% if page.slug == "lien-he" %}
+  <section class="panel-box" style="margin-top:24px">
+    <h2>Thông tin liên hệ</h2>
+    <dl class="kv">
+      {% if site.hotline %}<dt>Hotline</dt><dd><a href="tel:{{ site.hotline|cut:' '|cut:'.' }}">{{ site.hotline }}</a></dd>{% endif %}
+      {% if site.zalo %}<dt>Zalo</dt><dd>{{ site.zalo }}</dd>{% endif %}
+      {% if site.email %}<dt>Email</dt><dd>{{ site.email }}</dd>{% endif %}
+      {% if site.address %}<dt>Địa chỉ</dt><dd>{{ site.address }}</dd>{% endif %}
+      {% if site.opening_hours %}<dt>Giờ hoạt động</dt><dd>{{ site.opening_hours }}</dd>{% endif %}
+    </dl>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

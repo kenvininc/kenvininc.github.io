@@ -1,0 +1,20 @@
+{% load shop %}{% autoescape off %}Cảm ơn bạn đã đặt hàng tại {{ site.shop_name }}.
+
+Mã đơn: {{ order.code }}
+Người nhận: {{ order.customer_name }} - {{ order.phone }}
+Địa chỉ: {{ order.address }}
+
+{% for item in order.items.all %}- {{ item.product_name }}{% if item.variant_label %} ({{ item.variant_label }}){% endif %} x{{ item.quantity }}: {{ item.line_total|vnd }}
+{% endfor %}
+Tiền hàng: {{ order.subtotal|vnd }}
+Giảm giá: {{ order.discount_total|vnd }}
+Phí giao hàng: {{ order.shipping_fee|vnd }}
+Tổng thanh toán: {{ order.total|vnd }}
+Thanh toán: {{ order.get_payment_method_display }}
+{% if order.payment_method == "bank_transfer" and site.bank_transfer_ready %}
+Chuyển khoản: {{ site.bank_name }} - STK {{ site.bank_account_number }} - {{ site.bank_account_name }}
+Nội dung chuyển khoản: {{ order.code }}
+{% endif %}
+Tra cứu đơn: {{ site_url }}/don-hang/tra-cuu/
+{% if site.hotline %}Hotline: {{ site.hotline }}{% endif %}
+{% endautoescape %}

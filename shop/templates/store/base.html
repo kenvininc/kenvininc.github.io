@@ -1,0 +1,211 @@
+{% load static shop %}<!doctype html>
+<html lang="vi" style="--brand: {{ site.primary_color|default:'#B23A62' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {% block seo %}
+  <title>{% block title %}{{ site.seo_title|default:site.shop_name }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ site.seo_description }}{% endblock %}">
+  {% endblock %}
+  {% block meta_extra %}{% endblock %}
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <meta name="theme-color" content="{{ site.primary_color|default:'#B23A62' }}">
+  <link rel="stylesheet" href="{% static 'css/shop.css' %}">
+  <script src="{% static 'js/shop.js' %}" defer></script>
+</head>
+<body data-low-stock="{{ site.low_stock_threshold }}">
+<a class="skip-link" href="#main">Bỏ qua đến nội dung chính</a>
+
+<div class="topbar">
+  <div class="container">
+    <div class="topbar-items">
+      {% if site.tagline %}<span class="hide-sm">{{ site.tagline }}</span>{% endif %}
+      {% if site.opening_hours %}<span class="hide-sm">{% icon "clock" %} {{ site.opening_hours }}</span>{% endif %}
+    </div>
+    <div class="topbar-items">
+      {% if site.hotline %}<a href="tel:{{ site.hotline|cut:' '|cut:'.' }}">{% icon "phone" %} Hotline: <strong>{{ site.hotline }}</strong></a>{% endif %}
+      <a href="{% url 'store:order_lookup' %}" class="hide-sm">{% icon "package" %} Tra cứu đơn hàng</a>
+    </div>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="container header-main">
+    <button class="menu-toggle" type="button" aria-controls="mobile-menu" aria-expanded="false" data-drawer-open="mobile-menu">
+      {% icon "menu" label="Mở danh mục" %}
+    </button>
+    <a class="logo" href="{% url 'store:home' %}" aria-label="{{ site.shop_name }} - Trang chủ">
+      {% include "store/_logo.html" %}
+    </a>
+    <form class="search-form" role="search" action="{% url 'store:search' %}" method="get">
+      <label for="q" class="sr-only">Tìm sản phẩm</label>
+      <input id="q" type="search" name="q" value="{{ query|default:'' }}" placeholder="Tìm sản phẩm, thương hiệu..." autocomplete="off" maxlength="100">
+      <button type="submit">{% icon "search" label="Tìm kiếm" %}</button>
+    </form>
+    <div class="header-actions">
+      {% if site.hotline %}
+      <a class="header-action hotline-text" href="tel:{{ site.hotline|cut:' '|cut:'.' }}">
+        {% icon "phone" %}<span class="label-text"><small>Tư vấn</small><strong>{{ site.hotline }}</strong></span>
+      </a>
+      {% endif %}
+      <a class="header-action" href="{% url 'store:cart' %}">
+        {% icon "bag" %}
+        <span class="cart-badge" data-cart-count data-count="{{ cart_count }}" aria-hidden="true">{{ cart_count }}</span>
+        <span class="label-text"><small>Giỏ hàng</small><strong><span class="sr-only">có </span><span data-cart-count-text>{{ cart_count }}</span> sản phẩm</strong></span>
+        <span class="sr-only">Giỏ hàng</span>
+      </a>
+    </div>
+  </div>
+
+  <nav class="main-nav" aria-label="Danh mục sản phẩm">
+    <div class="container">
+      <div class="mega-wrap" data-mega>
+        <button class="mega-trigger" type="button" aria-expanded="false" aria-controls="mega-panel">
+          {% icon "menu" %} Danh mục sản phẩm
+        </button>
+        <div class="mega" id="mega-panel">
+          {% if nav_categories %}
+          <div class="mega-inner">
+            <ul class="mega-cats" role="tablist" aria-orientation="vertical">
+              {% for c in nav_categories %}
+              <li role="presentation">
+                <button class="mega-cat-btn" type="button" role="tab" id="mt-{{ c.pk }}" aria-controls="mp-{{ c.pk }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}" data-mega-tab>
+                  {{ c.name }} {% icon "chevron-right" %}
+                </button>
+              </li>
+              {% endfor %}
+            </ul>
+            <div>
+              {% for c in nav_categories %}
+              <div class="mega-panel{% if forloop.first %} active{% endif %}" id="mp-{{ c.pk }}" role="tabpanel" aria-labelledby="mt-{{ c.pk }}">
+                <div class="mega-panel-head">
+                  <h3>{{ c.name }}</h3>
+                  <a href="{{ c.get_absolute_url }}">Xem tất cả</a>
+                </div>
+                {% if c.children.all %}
+                <div class="mega-cols">
+                  {% for sub in c.children.all %}<a href="{{ sub.get_absolute_url }}">{{ sub.name }}</a>{% endfor %}
+                </div>
+                {% else %}
+                <p class="mega-empty"><a href="{{ c.get_absolute_url }}">Xem sản phẩm {{ c.name|lower }}</a></p>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% else %}
+          <div class="mega-panel active"><p class="mega-empty">Chưa có danh mục.</p></div>
+          {% endif %}
+        </div>
+      </div>
+      <ul class="nav-list">
+        {% for c in nav_categories|slice:":5" %}
+        <li class="nav-item" data-dropdown>
+          <a class="nav-link" href="{{ c.get_absolute_url }}">{{ c.name }}</a>
+          {% if c.children.all %}
+          <button class="nav-caret" type="button" aria-expanded="false" aria-controls="dd-{{ c.pk }}">{% icon "chevron-down" label="Mở "|add:c.name %}</button>
+          <div class="dropdown" id="dd-{{ c.pk }}">
+            {% for sub in c.children.all %}<a href="{{ sub.get_absolute_url }}">{{ sub.name }}</a>{% endfor %}
+          </div>
+          {% endif %}
+        </li>
+        {% endfor %}
+        <li class="nav-item"><a class="nav-link" href="{% url 'store:brands' %}">Thương hiệu</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'store:new' %}">Hàng mới</a></li>
+        <li class="nav-item"><a class="nav-link highlight" href="{% url 'store:sale' %}">Khuyến mãi</a></li>
+      </ul>
+    </div>
+  </nav>
+</header>
+
+<div class="drawer-backdrop" data-drawer-close></div>
+<aside class="drawer" id="mobile-menu" aria-label="Menu" aria-hidden="true">
+  <div class="drawer-head">
+    <h2>Danh mục</h2>
+    <button class="drawer-close" type="button" data-drawer-close>{% icon "x" label="Đóng menu" %}</button>
+  </div>
+  <div class="drawer-body">
+    <ul class="m-nav">
+      {% for c in nav_categories %}
+      <li>
+        <div class="m-row">
+          <a href="{{ c.get_absolute_url }}">{{ c.name }}</a>
+          {% if c.children.all %}
+          <button class="m-toggle" type="button" aria-expanded="false" aria-controls="ms-{{ c.pk }}">{% icon "chevron-down" label="Mở "|add:c.name %}</button>
+          {% endif %}
+        </div>
+        {% if c.children.all %}
+        <ul class="m-sub" id="ms-{{ c.pk }}" hidden>
+          {% for sub in c.children.all %}<li><a href="{{ sub.get_absolute_url }}">{{ sub.name }}</a></li>{% endfor %}
+        </ul>
+        {% endif %}
+      </li>
+      {% endfor %}
+      <li><div class="m-row"><a href="{% url 'store:brands' %}">Thương hiệu</a></div></li>
+      <li><div class="m-row"><a href="{% url 'store:new' %}">Hàng mới</a></div></li>
+      <li><div class="m-row"><a href="{% url 'store:sale' %}" style="color:var(--sale)">Khuyến mãi</a></div></li>
+    </ul>
+    <div class="drawer-extra">
+      <a href="{% url 'store:order_lookup' %}">{% icon "package" %} Tra cứu đơn hàng</a>
+      {% if site.hotline %}<a href="tel:{{ site.hotline|cut:' '|cut:'.' }}">{% icon "phone" %} {{ site.hotline }}</a>{% endif %}
+    </div>
+  </div>
+</aside>
+
+<main id="main" tabindex="-1">
+  {% block preview %}{% endblock %}
+  {% if messages %}
+  <div class="container messages" role="status">
+    {% for m in messages %}
+    <div class="alert alert-{% if m.tags == 'error' %}error{% elif m.tags == 'warning' %}warning{% elif m.tags == 'success' %}success{% else %}info{% endif %}">
+      {% if m.tags == 'success' %}{% icon "check" %}{% else %}{% icon "info" %}{% endif %}<div>{{ m }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div class="footer-brand">
+      {% include "store/_logo.html" with footer=1 %}
+      {% if site.tagline %}<p>{{ site.tagline }}</p>{% endif %}
+      <div class="socials">
+        {% if site.facebook_url %}<a href="{{ site.facebook_url }}" rel="noopener" target="_blank">{% icon "facebook" label="Facebook" %}</a>{% endif %}
+        {% if site.instagram_url %}<a href="{{ site.instagram_url }}" rel="noopener" target="_blank">{% icon "instagram" label="Instagram" %}</a>{% endif %}
+        {% if site.tiktok_url %}<a href="{{ site.tiktok_url }}" rel="noopener" target="_blank">{% icon "video" label="TikTok" %}</a>{% endif %}
+        {% if site.youtube_url %}<a href="{{ site.youtube_url }}" rel="noopener" target="_blank">{% icon "video" label="YouTube" %}</a>{% endif %}
+      </div>
+    </div>
+    <div>
+      {% if site.hotline or site.zalo or site.email or site.address or site.opening_hours %}<h2>Liên hệ</h2>{% endif %}
+      <ul>
+        {% if site.hotline %}<li>{% icon "phone" %}<a href="tel:{{ site.hotline|cut:' '|cut:'.' }}">{{ site.hotline }}</a></li>{% endif %}
+        {% if site.zalo %}<li>{% icon "chat" %}<span>Zalo: {{ site.zalo }}</span></li>{% endif %}
+        {% if site.email %}<li>{% icon "mail" %}<a href="mailto:{{ site.email }}">{{ site.email }}</a></li>{% endif %}
+        {% if site.address %}<li>{% icon "pin" %}<span>{{ site.address }}</span></li>{% endif %}
+        {% if site.opening_hours %}<li>{% icon "clock" %}<span>{{ site.opening_hours }}</span></li>{% endif %}
+      </ul>
+    </div>
+    <div>
+      <h2>Mua sắm</h2>
+      <ul>
+        <li><a href="{% url 'store:new' %}">Hàng mới</a></li>
+        <li><a href="{% url 'store:sale' %}">Khuyến mãi</a></li>
+        <li><a href="{% url 'store:brands' %}">Thương hiệu</a></li>
+        <li><a href="{% url 'store:order_lookup' %}">Tra cứu đơn hàng</a></li>
+      </ul>
+    </div>
+    <div>
+      <h2>Thông tin</h2>
+      <ul>
+        {% for p in footer_pages %}<li><a href="{{ p.get_absolute_url }}">{{ p.title }}</a></li>{% empty %}<li><span>Đang cập nhật.</span></li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">© {% now "Y" %} {{ site.shop_name }}</div>
+</footer>
+<div class="toast-wrap" aria-live="polite" data-toasts></div>
+</body>
+</html>

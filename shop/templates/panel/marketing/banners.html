@@ -1,0 +1,20 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Banner{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Banner trang chủ</h1><div class="actions"><a class="btn" href="{% url 'panel:banner_add' %}">{% icon "plus" %} Thêm banner</a></div></div>
+<p class="muted">Banner chính trượt tự động; tối đa 2 banner phụ bên phải; banner ngang hiển thị giữa trang chủ (lấy banner đầu tiên). Thứ tự nhỏ hiển thị trước.</p>
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>Ảnh</th><th>Tiêu đề</th><th>Vị trí</th><th>Liên kết</th><th>Lịch hiển thị</th><th class="num">Thứ tự</th><th>Trạng thái</th></tr></thead>
+  <tbody>
+  {% for b in banners %}
+    <tr><td><img src="{{ b.image.url }}" alt="" style="width:140px;height:60px;object-fit:cover;border-radius:6px"></td>
+      <td><a href="{% url 'panel:banner_edit' b.pk %}"><strong>{{ b.title }}</strong></a></td><td>{{ b.get_placement_display }}</td>
+      <td class="mono muted">{{ b.link_url|default:"—" }}</td>
+      <td class="muted nowrap">{{ b.starts_at|date:"d/m/Y H:i"|default:"Luôn" }}<br>→ {{ b.ends_at|date:"d/m/Y H:i"|default:"Luôn" }}</td>
+      <td class="num">{{ b.sort_order }}</td>
+      <td><form method="post" action="{% url 'panel:banner_toggle' b.pk %}">{% csrf_token %}<button class="btn btn-sm {% if b.is_active %}{% else %}btn-secondary{% endif %}" type="submit">{% if b.is_active %}Đang bật{% else %}Đang tắt{% endif %}</button></form></td></tr>
+  {% empty %}
+    <tr class="empty-row"><td colspan="7">Chưa có banner. Trang chủ sẽ hiện khung chào mừng thay cho banner.</td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{% endblock %}

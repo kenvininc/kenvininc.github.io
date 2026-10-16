@@ -1,0 +1,59 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Sản phẩm{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Sản phẩm</h1>
+  <div class="actions">
+    {% if "import_export" in panel_perms %}<a class="btn btn-secondary" href="{% url 'panel:import' %}">{% icon "upload" %} Nhập / xuất Excel</a>{% endif %}
+    {% if "manage_products" in panel_perms %}<a class="btn" href="{% url 'panel:product_add' %}">{% icon "plus" %} Thêm sản phẩm</a>{% endif %}
+  </div>
+</div>
+
+<form method="get" class="filters">
+  <div class="field grow"><label for="q">Tìm theo tên, mã, SKU, thương hiệu</label><input id="q" type="search" name="q" value="{{ request.GET.q }}"></div>
+  <div class="field"><label for="status">Trạng thái</label><select id="status" name="status"><option value="">Tất cả</option>{% for k, l in statuses %}<option value="{{ k }}" {% if request.GET.status == k %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="category">Danh mục</label><select id="category" name="category"><option value="">Tất cả</option>{% for c in categories %}<option value="{{ c.pk }}" {% if request.GET.category == c.pk|stringformat:"d" %}selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="brand">Thương hiệu</label><select id="brand" name="brand"><option value="">Tất cả</option>{% for b in brands %}<option value="{{ b.pk }}" {% if request.GET.brand == b.pk|stringformat:"d" %}selected{% endif %}>{{ b.name }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="stock">Tồn kho</label><select id="stock" name="stock"><option value="">Tất cả</option><option value="low" {% if request.GET.stock == "low" %}selected{% endif %}>Có biến thể sắp hết (≤ {{ low_threshold }})</option><option value="out" {% if request.GET.stock == "out" %}selected{% endif %}>Có biến thể hết hàng</option></select></div>
+  <div class="field"><label for="home">Trang chủ</label><select id="home" name="home"><option value="">Tất cả</option><option value="is_featured" {% if request.GET.home == "is_featured" %}selected{% endif %}>Nổi bật</option><option value="is_new" {% if request.GET.home == "is_new" %}selected{% endif %}>Hàng mới</option><option value="is_on_sale_section" {% if request.GET.home == "is_on_sale_section" %}selected{% endif %}>Đang giảm giá</option></select></div>
+  <button class="btn btn-secondary" type="submit">{% icon "search" %} Lọc</button>
+  {% if request.GET %}<a class="btn btn-secondary" href="{% url 'panel:products' %}">Xóa lọc</a>{% endif %}
+</form>
+
+<form method="post" action="{% url 'panel:product_bulk' %}" data-bulk-form>
+  {% csrf_token %}
+  <input type="hidden" name="back" value="{{ request.get_full_path }}">
+  <div class="bulk-bar">
+    <label for="bulk-action">Với sản phẩm đã chọn:</label>
+    <select id="bulk-action" name="action"><option value="">— Chọn thao tác —</option>{% for k, l in bulk_actions %}<option value="{{ k }}">{{ l }}</option>{% endfor %}</select>
+    <button class="btn btn-secondary btn-sm" type="submit" data-bulk-submit disabled>Áp dụng</button>
+    <span class="muted" data-bulk-count>Chưa chọn sản phẩm nào</span>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr>
+        <th><input type="checkbox" data-select-all aria-label="Chọn tất cả"></th>
+        <th></th><th>Sản phẩm</th><th>Thương hiệu / Danh mục</th><th class="num">Giá</th><th class="num">Tồn</th><th>Trạng thái</th><th>Trang chủ</th><th>Cập nhật</th>
+      </tr></thead>
+      <tbody>
+      {% for p in page_obj %}
+        <tr>
+          <td><input type="checkbox" name="ids" value="{{ p.pk }}" aria-label="Chọn {{ p.name }}" data-row-check></td>
+          <td>{% with img=p.main_image %}{% if img %}<img class="thumb" src="{{ img.thumb_url }}" alt="">{% else %}<span class="thumb" style="display:inline-grid;place-items:center;color:#ccc">{% icon "image" %}</span>{% endif %}{% endwith %}</td>
+          <td><a href="{% url 'panel:product_edit' p.pk %}"><strong>{{ p.name }}</strong></a><br><span class="muted mono">{{ p.code }}</span></td>
+          <td>{{ p.brand.name|default:"—" }}<br><span class="muted">{{ p.category|default:"—" }}</span></td>
+          <td class="num">{% if p.min_price is not None %}{{ p.min_price|vnd }}{% if p.max_price != p.min_price %}<br><span class="muted">– {{ p.max_price|vnd }}</span>{% endif %}{% else %}—{% endif %}</td>
+          <td class="num">{% if p.total_stock is None %}—{% else %}<span class="badge {% if p.min_stock <= 0 %}badge-err{% elif p.min_stock <= low_threshold %}badge-warn{% else %}badge-ok{% endif %}">{{ p.total_stock }}</span>{% endif %}</td>
+          <td><span class="badge badge-{{ p.status }}">{{ p.get_status_display }}</span></td>
+          <td class="muted" style="font-size:12px">{% if p.is_featured %}Nổi bật<br>{% endif %}{% if p.is_new %}Mới<br>{% endif %}{% if p.is_on_sale_section %}Giảm giá{% endif %}</td>
+          <td class="nowrap muted">{{ p.updated_at|date:"d/m/Y H:i" }}</td>
+        </tr>
+      {% empty %}
+        <tr class="empty-row"><td colspan="9">{% if request.GET %}Không có sản phẩm phù hợp bộ lọc.{% else %}Chưa có sản phẩm. <a href="{% url 'panel:product_add' %}">Thêm sản phẩm đầu tiên</a> hoặc <a href="{% url 'panel:import' %}">nhập từ Excel</a>.{% endif %}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</form>
+{% include "panel/_pagination.html" %}
+{% endblock %}

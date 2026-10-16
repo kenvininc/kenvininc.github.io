@@ -1,3 +1,9 @@
 server/.env
 server/data/
 __pycache__/
+shop/.env
+shop/data/
+shop/backups/
+shop/media/
+shop/staticfiles/
+shop/*.sqlite3

@@ -1,0 +1,74 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Tổng quan{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Tổng quan</h1>
+  <form method="get" class="filters" style="margin:0">
+    <div class="field"><label for="khoang">Khoảng thời gian</label>
+      <select id="khoang" name="khoang" data-range-select>
+        {% for k, label in ranges %}<option value="{{ k }}" {% if k == range_key %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select></div>
+    <div class="field" data-custom-range {% if range_key != "custom" %}hidden{% endif %}><label for="tu">Từ</label><input id="tu" type="date" name="tu" value="{{ start_date|date:'Y-m-d' }}"></div>
+    <div class="field" data-custom-range {% if range_key != "custom" %}hidden{% endif %}><label for="den">Đến</label><input id="den" type="date" name="den" value="{{ end_date|date:'Y-m-d' }}"></div>
+    <button class="btn btn-secondary" type="submit">Xem</button>
+  </form>
+</div>
+<p class="muted">Từ {{ start_date|date:"d/m/Y" }} đến {{ end_date|date:"d/m/Y" }}</p>
+
+{% if todo %}
+<div class="alert alert-warning">{% icon "info" %}<div><strong>Việc cần làm trước khi bán:</strong>
+  <ul>{% for text, url in todo %}<li><a href="{% url url %}">{{ text }}</a></li>{% endfor %}</ul></div></div>
+{% endif %}
+
+{% if counts %}
+<div class="grid grid-4" style="margin-bottom:16px">
+  <a class="stat accent" href="{% url 'panel:orders' %}?status=new"><div class="label">Đơn mới</div><div class="value">{{ counts.new }}</div><div class="sub">Chờ xác nhận{% if counts.unpaid_bank %} · {{ counts.unpaid_bank }} chờ chuyển khoản{% endif %}</div></a>
+  <a class="stat" href="{% url 'panel:orders' %}?status=confirmed"><div class="label">Cần xử lý</div><div class="value">{{ counts.processing }}</div><div class="sub">Đã xác nhận + đang đóng gói</div></a>
+  <a class="stat" href="{% url 'panel:orders' %}?status=shipping"><div class="label">Đang giao</div><div class="value">{{ counts.shipping }}</div><div class="sub">Hiện tại</div></a>
+  <div class="stat"><div class="label">Đơn đặt trong kỳ</div><div class="value">{{ in_range.created }}</div><div class="sub">Hoàn tất {{ in_range.completed }} · Hủy {{ in_range.cancelled }}</div></div>
+</div>
+{% endif %}
+
+{% if revenue %}
+<div class="card">
+  <h2>Doanh thu trong kỳ</h2>
+  <div class="grid grid-4">
+    <div class="stat"><div class="label">Doanh thu (gồm phí giao hàng)</div><div class="value">{{ revenue.total|vnd }}</div><div class="sub">{{ revenue.n }} đơn hoàn tất</div></div>
+    <div class="stat"><div class="label">Tiền hàng sau giảm giá</div><div class="value">{{ revenue.goods|vnd }}</div></div>
+    <div class="stat"><div class="label">Phí giao hàng đã thu</div><div class="value">{{ revenue.shipping|vnd }}</div></div>
+    <div class="stat"><div class="label">Đã giảm bằng mã</div><div class="value">{{ revenue.discount|vnd }}</div></div>
+  </div>
+  <p class="help-box" style="margin:12px 0 0">Cách tính: cộng “Tổng thanh toán” của các đơn ở trạng thái <strong>Hoàn tất</strong>, theo <strong>ngày chuyển sang Hoàn tất</strong> nằm trong khoảng đã chọn. Không tính đơn mới, đang xử lý, đang giao, đã hủy hoặc hoàn/trả. Không trừ giá vốn và chi phí vận chuyển thực tế.</p>
+</div>
+{% endif %}
+
+<div class="two-col">
+  {% if show_orders %}
+  <div class="card">
+    <div class="card-head"><h2>Đơn gần đây</h2><a href="{% url 'panel:orders' %}">Tất cả đơn</a></div>
+    {% if recent_orders %}
+    <div class="table-wrap" style="border:0"><table class="table">
+      <thead><tr><th>Mã đơn</th><th>Khách</th><th class="num">Tổng</th><th>Trạng thái</th><th>Thời gian</th></tr></thead>
+      <tbody>{% for o in recent_orders %}
+        <tr><td><a href="{% url 'panel:order_detail' o.pk %}" class="mono">{{ o.code }}</a></td><td>{{ o.customer_name }}</td><td class="num">{{ o.total|vnd }}</td>
+          <td><span class="badge badge-{{ o.status }}">{{ o.get_status_display }}</span></td><td class="nowrap muted">{{ o.created_at|date:"H:i d/m" }}</td></tr>
+      {% endfor %}</tbody></table></div>
+    {% else %}<div class="empty">{% icon "receipt" %}<p>Chưa có đơn hàng.</p></div>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if show_stock %}
+  <div class="card">
+    <div class="card-head"><h2>Sắp hết hàng ({{ low_stock_count }})</h2><a href="{% url 'panel:stock' %}?muc=sap-het">Xem tất cả</a></div>
+    <p class="muted" style="margin-top:-6px">Tồn ≤ {{ site.low_stock_threshold }} (đổi ngưỡng trong Cấu hình cửa hàng)</p>
+    {% if low_stock %}
+    <table class="table"><tbody>
+      {% for v in low_stock %}<tr><td><a href="{% url 'panel:product_edit' v.product_id %}">{{ v.product.name }}</a>{% if v.value %} <span class="muted">· {{ v.value }}</span>{% endif %}<br><span class="muted mono">{{ v.sku }}</span></td>
+        <td class="num"><span class="badge {% if v.stock <= 0 %}badge-err{% else %}badge-warn{% endif %}">{{ v.stock }}</span></td></tr>{% endfor %}
+    </tbody></table>
+    {% else %}<div class="empty">{% icon "check" %}<p>Không có sản phẩm sắp hết hàng.</p></div>{% endif %}
+    {% if product_counts %}<p class="muted">Đang bán: {{ product_counts.published }} sản phẩm · Nháp: {{ product_counts.draft }}</p>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% load shop %}{% if quote.coupon %}
+<div class="coupon-applied">
+  <span>{% icon "tag" %} Mã <strong>{{ quote.coupon.code }}</strong>{% if quote.coupon.description %} — {{ quote.coupon.description }}{% endif %}</span>
+  <form method="post" action="{% url 'store:cart_coupon' %}">{% csrf_token %}
+    <input type="hidden" name="action" value="remove"><input type="hidden" name="back" value="{{ back }}">
+    <button class="link-btn" type="submit">{% icon "x" label="Bỏ mã giảm giá" %}</button>
+  </form>
+</div>
+{% else %}
+<form class="coupon-form" method="post" action="{% url 'store:cart_coupon' %}">{% csrf_token %}
+  <input type="hidden" name="back" value="{{ back }}">
+  <label class="sr-only" for="coupon_code">Mã giảm giá</label>
+  <input id="coupon_code" name="coupon_code" placeholder="Mã giảm giá" maxlength="40" autocomplete="off">
+  <button class="btn btn-outline" type="submit">Áp dụng</button>
+</form>
+{% endif %}

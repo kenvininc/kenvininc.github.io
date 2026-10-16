@@ -1,0 +1,140 @@
+{% extends "store/base.html" %}{% load shop %}
+{% block title %}{% if product.seo_title %}{{ product.seo_title }}{% else %}{{ product.name }} | {{ site.shop_name }}{% endif %}{% endblock %}
+{% block description %}{% if product.seo_description %}{{ product.seo_description }}{% else %}{{ product.short_description|default:product.description|truncatechars:160 }}{% endif %}{% endblock %}
+{% block meta_extra %}
+<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ product.get_absolute_url }}">
+{% if is_preview %}<meta name="robots" content="noindex">{% endif %}
+{% with img=images.0 %}{% if img %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ img.image.url }}">{% endif %}{% endwith %}
+<meta property="og:title" content="{{ product.name }}">
+{% endblock %}
+{% block preview %}{% if is_preview %}<div class="preview-bar"><div class="container">{% icon "eye" %} Bản xem trước — sản phẩm đang ở trạng thái “{{ product.get_status_display }}”, khách chưa nhìn thấy trang này.</div></div>{% endif %}{% endblock %}
+{% block content %}
+<div class="container">
+  <nav class="breadcrumb" aria-label="Đường dẫn">
+    <ol>
+      <li><a href="{% url 'store:home' %}">Trang chủ</a></li>
+      {% if product.category.parent %}<li><a href="{{ product.category.parent.get_absolute_url }}">{{ product.category.parent.name }}</a></li>{% endif %}
+      {% if product.category %}<li><a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a></li>{% endif %}
+      <li aria-current="page">{{ product.name }}</li>
+    </ol>
+  </nav>
+
+  <div class="pdp" data-pdp>
+    <div class="gallery">
+      <div class="gallery-main">
+        {% if images %}
+        <img src="{{ images.0.image.url }}" alt="{{ images.0.alt|default:product.name }}" data-gallery-main width="1000" height="1000">
+        {% else %}<span class="no-image">{% icon "image" %}</span>{% endif %}
+      </div>
+      {% if images|length > 1 %}
+      <ul class="gallery-thumbs">
+        {% for img in images %}
+        <li><button type="button" data-gallery-thumb data-image-id="{{ img.pk }}" data-src="{{ img.image.url }}" data-alt="{{ img.alt|default:product.name }}" {% if forloop.first %}aria-current="true"{% endif %} aria-label="Xem ảnh {{ forloop.counter }}">
+          <img src="{{ img.thumb_url }}" alt="" loading="lazy">
+        </button></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+    </div>
+
+    <div class="pdp-info">
+      {% if product.brand %}<a class="pdp-brand" href="{{ product.brand.get_absolute_url }}">{{ product.brand.name }}</a>{% endif %}
+      <h1>{{ product.name }}</h1>
+      <div class="pdp-meta">
+        <span>SKU: <span data-sku>{{ selected.sku|default:"-" }}</span></span>
+        {% if product.category %}<span>Danh mục: <a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a></span>{% endif %}
+      </div>
+
+      {% if selected %}
+      <div class="pdp-price" aria-live="polite">
+        <span class="price{% if selected.is_discounted %} is-sale{% endif %}" data-price>{{ selected.price|vnd }}</span>
+        <span class="price-old" data-compare {% if not selected.is_discounted %}hidden{% endif %}><span class="sr-only">Giá gốc </span>{% if selected.is_discounted %}{{ selected.compare_at_price|vnd }}{% endif %}</span>
+        <span class="badge badge-sale" data-discount {% if not selected.is_discounted %}hidden{% endif %}>{% if selected.is_discounted %}-{{ selected|discount_percent }}%{% endif %}</span>
+      </div>
+      {% endif %}
+
+      {% if product.short_description %}<p>{{ product.short_description }}</p>{% endif %}
+
+      {% if variants %}
+      <form method="post" action="{% url 'store:cart_add' %}" data-add-to-cart>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        {% if variants|length > 1 or selected.value %}
+        <fieldset class="variant-group">
+          <legend>{{ product.variant_attribute.name|default:"Phân loại" }}: <span data-variant-label>{{ selected.label }}</span></legend>
+          <div class="variant-options">
+            {% for v in variants %}
+            <label class="variant-opt{% if v.stock <= 0 %} is-out{% endif %}">
+              <input type="radio" name="variant_id" value="{{ v.pk }}" {% if v.pk == selected.pk %}checked{% endif %}
+                data-price="{{ v.price|vnd }}" data-compare="{% if v.is_discounted %}{{ v.compare_at_price|vnd }}{% endif %}"
+                data-discount="{% if v.is_discounted %}{{ v|discount_percent }}{% endif %}" data-stock="{{ v.stock }}" data-sku="{{ v.sku }}"
+                data-label="{{ v.label }}" data-image-id="{{ v.image_id|default:'' }}" data-image-src="{% if v.image %}{{ v.image.image.url }}{% endif %}">
+              <span>{% if v.color_hex %}<i class="swatch" style="background:{{ v.color_hex }}"></i>{% endif %}{{ v.label }}{% if v.stock <= 0 %} (hết){% endif %}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+        {% else %}
+        <input type="hidden" name="variant_id" value="{{ selected.pk }}">
+        {% endif %}
+
+        <p class="stock-line {% if selected.stock <= 0 %}out{% elif selected.stock <= site.low_stock_threshold %}low{% else %}in{% endif %}" data-stock-line aria-live="polite">
+          {% if selected.stock <= 0 %}{% icon "alert" %} Hết hàng{% elif selected.stock <= site.low_stock_threshold %}{% icon "info" %} Chỉ còn {{ selected.stock }} sản phẩm{% else %}{% icon "check" %} Còn hàng{% endif %}
+        </p>
+
+        <div class="buy-row">
+          <div class="qty" data-qty>
+            <button type="button" data-qty-dec>{% icon "minus" label="Giảm số lượng" %}</button>
+            <label for="qty" class="sr-only">Số lượng</label>
+            <input id="qty" type="number" name="quantity" value="1" min="1" max="{{ site.max_qty_per_item }}" inputmode="numeric">
+            <button type="button" data-qty-inc>{% icon "plus" label="Tăng số lượng" %}</button>
+          </div>
+          <button class="btn btn-lg" type="submit" data-add-btn {% if selected.stock <= 0 or is_preview %}disabled{% endif %}>
+            {% icon "bag" %} <span data-add-text>{% if selected.stock <= 0 %}Hết hàng{% else %}Thêm vào giỏ{% endif %}</span>
+          </button>
+        </div>
+        {% if is_preview %}<p class="alert alert-warning">Nút mua bị tắt trong chế độ xem trước.</p>{% endif %}
+      </form>
+      {% else %}
+      <p class="alert alert-warning">{% icon "alert" %} Sản phẩm chưa có phân loại đang bán.</p>
+      {% endif %}
+
+      {% if site.shipping_policy_summary or site.return_policy_summary or site.hotline %}
+      <div class="perks">
+        {% if site.shipping_policy_summary %}
+        <div class="perk">{% icon "truck" %}<div><strong>Giao hàng</strong><p>{{ site.shipping_policy_summary }}</p>{% if "chinh-sach-giao-hang" in policy_links %}<a href="{% url 'store:page' 'chinh-sach-giao-hang' %}">Xem chính sách</a>{% endif %}</div></div>
+        {% endif %}
+        {% if site.return_policy_summary %}
+        <div class="perk">{% icon "return" %}<div><strong>Đổi trả</strong><p>{{ site.return_policy_summary }}</p>{% if "chinh-sach-doi-tra" in policy_links %}<a href="{% url 'store:page' 'chinh-sach-doi-tra' %}">Xem chính sách</a>{% endif %}</div></div>
+        {% endif %}
+        {% if site.hotline %}
+        <div class="perk">{% icon "phone" %}<div><strong>Tư vấn</strong><p>Gọi <a href="tel:{{ site.hotline|cut:' '|cut:'.' }}">{{ site.hotline }}</a>{% if site.opening_hours %} ({{ site.opening_hours }}){% endif %}</p></div></div>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if product.description or product.ingredients or product.benefits or product.usage %}
+  <section class="tabs" data-tabs>
+    <div class="tab-list" role="tablist" aria-label="Thông tin sản phẩm">
+      {% if product.description %}<button role="tab" type="button" id="t-desc" aria-controls="p-desc">Mô tả</button>{% endif %}
+      {% if product.benefits %}<button role="tab" type="button" id="t-ben" aria-controls="p-ben">Công dụng</button>{% endif %}
+      {% if product.ingredients %}<button role="tab" type="button" id="t-ing" aria-controls="p-ing">Thành phần</button>{% endif %}
+      {% if product.usage %}<button role="tab" type="button" id="t-use" aria-controls="p-use">Hướng dẫn sử dụng</button>{% endif %}
+    </div>
+    {% if product.description %}<div class="tab-panel prose" role="tabpanel" id="p-desc" aria-labelledby="t-desc">{{ product.description|rich }}</div>{% endif %}
+    {% if product.benefits %}<div class="tab-panel prose" role="tabpanel" id="p-ben" aria-labelledby="t-ben">{{ product.benefits|rich }}</div>{% endif %}
+    {% if product.ingredients %}<div class="tab-panel prose" role="tabpanel" id="p-ing" aria-labelledby="t-ing">{{ product.ingredients|rich }}</div>{% endif %}
+    {% if product.usage %}<div class="tab-panel prose" role="tabpanel" id="p-use" aria-labelledby="t-use">{{ product.usage|rich }}</div>{% endif %}
+  </section>
+  {% endif %}
+
+  {% if related %}
+  <section class="section" aria-labelledby="h-related">
+    <div class="section-head"><h2 id="h-related">Sản phẩm <span>liên quan</span></h2></div>
+    <ul class="product-grid">{% for p in related %}<li>{% include "store/_card.html" %}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

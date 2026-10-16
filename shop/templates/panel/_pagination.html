@@ -1,0 +1,12 @@
+{% load shop %}{% if page_obj.paginator.num_pages > 1 %}
+<nav aria-label="Phân trang"><ul class="pagination">
+  {% if page_obj.has_previous %}<li><a href="{% querystring trang=page_obj.previous_page_number %}">‹</a></li>{% endif %}
+  {% for n in page_obj|elided %}
+    {% if n == page_obj.number %}<li><span class="current" aria-current="page">{{ n }}</span></li>
+    {% elif n == page_obj.paginator.ELLIPSIS %}<li><span>…</span></li>
+    {% else %}<li><a href="{% querystring trang=n %}">{{ n }}</a></li>{% endif %}
+  {% endfor %}
+  {% if page_obj.has_next %}<li><a href="{% querystring trang=page_obj.next_page_number %}">›</a></li>{% endif %}
+</ul></nav>
+<p class="muted">Tổng {{ page_obj.paginator.count }} mục</p>
+{% endif %}

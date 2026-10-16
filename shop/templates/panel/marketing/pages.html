@@ -1,0 +1,15 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Trang nội dung{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Trang nội dung</h1><div class="actions"><a class="btn" href="{% url 'panel:page_add' %}">{% icon "plus" %} Thêm trang</a></div></div>
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>Tiêu đề</th><th>Đường dẫn</th><th>Trạng thái</th><th>Chân trang</th><th>Cập nhật</th><th></th></tr></thead>
+  <tbody>
+  {% for p in pages %}
+    <tr><td><a href="{% url 'panel:page_edit' p.pk %}"><strong>{{ p.title }}</strong></a></td><td class="mono muted">/trang/{{ p.slug }}/</td>
+      <td><span class="badge badge-{{ p.status }}">{{ p.get_status_display }}</span>{% if not p.body %} <span class="badge badge-warn">Chưa có nội dung</span>{% endif %}</td>
+      <td>{% if p.show_in_footer %}Có{% endif %}</td><td class="muted nowrap">{{ p.updated_at|date:"d/m/Y H:i" }}</td>
+      <td><a href="{{ p.get_absolute_url }}" target="_blank" rel="noopener">{% icon "eye" %} Xem{% if p.status != "published" %} trước{% endif %}</a></td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{% endblock %}

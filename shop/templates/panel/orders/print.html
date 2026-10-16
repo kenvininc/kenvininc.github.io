@@ -1,0 +1,49 @@
+{% load shop static %}<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>{% if kind == "hoa-don" %}Phiếu giao hàng{% else %}Phiếu đóng gói{% endif %}</title>
+<style>
+body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;font-size:13px;color:#000;margin:0;background:#eee}
+.sheet{background:#fff;max-width:780px;margin:16px auto;padding:24px 28px;page-break-after:always}
+.sheet:last-child{page-break-after:auto}
+h1{font-size:18px;margin:0}
+.head{display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:12px}
+.code{font-family:Consolas,monospace;font-size:20px;font-weight:700}
+table{width:100%;border-collapse:collapse;margin:10px 0}th,td{border:1px solid #999;padding:6px;text-align:left}th{background:#f2f2f2}
+.num{text-align:right}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.box{border:1px solid #999;padding:8px}
+.check{width:18px;height:18px;border:1px solid #000;display:inline-block}
+.tools{text-align:center;margin:12px}.tools button{padding:8px 16px;font-size:14px}
+@media print{body{background:#fff}.sheet{margin:0;max-width:none;padding:0 0 16px}.tools{display:none}}
+</style>
+<script src="{% static 'js/print.js' %}" defer></script>
+</head><body>
+<div class="tools"><button type="button" data-print>In</button></div>
+{% for order in orders %}
+<div class="sheet">
+  <div class="head">
+    <div><h1>{{ site.shop_name }}</h1>{% if site.hotline %}Hotline: {{ site.hotline }}{% endif %}{% if site.address %}<br>{{ site.address }}{% endif %}</div>
+    <div style="text-align:right"><div>{% if kind == "hoa-don" %}PHIẾU GIAO HÀNG{% else %}PHIẾU ĐÓNG GÓI{% endif %}</div><div class="code">{{ order.code }}</div><div>{{ order.created_at|date:"H:i d/m/Y" }}</div></div>
+  </div>
+  <div class="grid">
+    <div class="box"><strong>Người nhận:</strong> {{ order.customer_name }}<br><strong>Điện thoại:</strong> {{ order.phone }}<br><strong>Địa chỉ:</strong> {{ order.address|linebreaksbr }}</div>
+    <div class="box"><strong>Thanh toán:</strong> {{ order.get_payment_method_display }} — {{ order.get_payment_status_display }}<br>
+      {% if order.payment_method == "cod" and order.payment_status != "paid" %}<strong>Thu hộ (COD): {{ order.total|vnd }}</strong><br>{% endif %}
+      {% if order.tracking_code %}<strong>Vận đơn:</strong> {{ order.carrier }} {{ order.tracking_code }}<br>{% endif %}
+      {% if order.customer_note %}<strong>Ghi chú khách:</strong> {{ order.customer_note }}{% endif %}</div>
+  </div>
+  <table>
+    <thead><tr>{% if kind != "hoa-don" %}<th style="width:30px">✓</th>{% endif %}<th>Sản phẩm</th><th>SKU</th><th class="num">SL</th>{% if kind == "hoa-don" %}<th class="num">Đơn giá</th><th class="num">Thành tiền</th>{% endif %}</tr></thead>
+    <tbody>{% for it in order.items.all %}<tr>{% if kind != "hoa-don" %}<td><span class="check"></span></td>{% endif %}<td>{{ it.product_name }}{% if it.variant_label %} — {{ it.variant_label }}{% endif %}</td><td>{{ it.sku }}</td><td class="num"><strong>{{ it.quantity }}</strong></td>{% if kind == "hoa-don" %}<td class="num">{{ it.unit_price|vnd }}</td><td class="num">{{ it.line_total|vnd }}</td>{% endif %}</tr>{% endfor %}</tbody>
+  </table>
+  {% if kind == "hoa-don" %}
+  <table style="width:50%;margin-left:auto"><tbody>
+    <tr><td>Tiền hàng</td><td class="num">{{ order.subtotal|vnd }}</td></tr>
+    <tr><td>Giảm giá</td><td class="num">-{{ order.discount_total|vnd }}</td></tr>
+    <tr><td>Phí giao hàng</td><td class="num">{{ order.shipping_fee|vnd }}</td></tr>
+    <tr><th>Tổng thanh toán</th><th class="num">{{ order.total|vnd }}</th></tr></tbody></table>
+  {% else %}
+  <p>Tổng số lượng: <strong>{{ order.item_count }}</strong> · Người đóng gói: ____________________</p>
+  {% endif %}
+</div>
+{% empty %}<p class="sheet">Chưa chọn đơn hàng nào.</p>{% endfor %}
+</body></html>

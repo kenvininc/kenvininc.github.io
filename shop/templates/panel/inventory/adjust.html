@@ -1,0 +1,20 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Điều chỉnh tồn kho{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Điều chỉnh tồn kho</h1><div class="actions"><a class="btn btn-secondary" href="{% url 'panel:stock' %}">Quay lại</a></div></div>
+<div class="two-col">
+  <div class="card">
+    <p><strong>{{ variant.product.name }}</strong>{% if variant.value %} · {{ variant.value }}{% endif %}<br><span class="muted mono">{{ variant.sku }}</span></p>
+    <p>Tồn hiện tại: <strong style="font-size:20px">{{ variant.stock }}</strong></p>
+    {% if form.errors %}<div class="alert alert-error" role="alert">{% icon "alert" %}<div>Vui lòng kiểm tra lại.</div></div>{% endif %}
+    <form method="post" novalidate>{% csrf_token %}
+      {% for field in form %}{% include "panel/_field.html" %}{% endfor %}
+      <div class="form-actions"><button class="btn" type="submit" data-submit-once>Lưu điều chỉnh</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>20 lần thay đổi gần nhất</h2>
+    {% include "panel/inventory/_movements.html" with movements=movements compact=1 %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "store/base.html" %}{% load shop %}
+{% block content %}
+<div class="container">
+  {% if hero_banners or side_banners %}
+  <section class="hero" aria-label="Chương trình nổi bật">
+    {% if hero_banners %}
+    <div class="hero-main" data-carousel>
+      {% for b in hero_banners %}
+      <a class="hero-slide{% if forloop.first %} active{% endif %}" href="{{ b.link_url|default:'#' }}" {% if not forloop.first %}tabindex="-1" aria-hidden="true"{% endif %}>
+        <picture>
+          {% if b.image_mobile %}<source media="(max-width: 600px)" srcset="{{ b.image_mobile.url }}">{% endif %}
+          <img src="{{ b.image.url }}" alt="{{ b.title }}" {% if not forloop.first %}loading="lazy"{% endif %}>
+        </picture>
+      </a>
+      {% endfor %}
+      {% if hero_banners|length > 1 %}
+      <button class="hero-arrow prev" type="button" data-prev>{% icon "chevron-left" label="Banner trước" %}</button>
+      <button class="hero-arrow next" type="button" data-next>{% icon "chevron-right" label="Banner sau" %}</button>
+      <div class="hero-dots">
+        {% for b in hero_banners %}<button type="button" data-dot="{{ forloop.counter0 }}" aria-label="Banner {{ forloop.counter }}" {% if forloop.first %}aria-current="true"{% endif %}></button>{% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% if side_banners %}
+    <div class="hero-side">
+      {% for b in side_banners %}
+      <a href="{{ b.link_url|default:'#' }}"><img src="{{ b.image.url }}" alt="{{ b.title }}"></a>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+  {% else %}
+  <section class="hero">
+    <div class="hero-welcome">
+      <h1>{{ site.shop_name }}</h1>
+      {% if site.tagline %}<p>{{ site.tagline }}</p>{% endif %}
+      <a class="btn" href="{% url 'store:new' %}">Xem sản phẩm</a>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if home_categories %}
+  <section class="section" aria-labelledby="h-cats">
+    <div class="section-head"><h2 id="h-cats">Danh mục <span>nổi bật</span></h2></div>
+    <div class="cat-tiles">
+      {% for c in home_categories %}
+      <a class="cat-tile" href="{{ c.get_absolute_url }}">
+        <span class="thumb">{% if c.image %}<img src="{{ c.image.url }}" alt="" loading="lazy">{% else %}{% icon "grid" %}{% endif %}</span>
+        {{ c.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if featured %}
+  <section class="section" aria-labelledby="h-featured">
+    <div class="section-head"><h2 id="h-featured">Sản phẩm <span>nổi bật</span></h2></div>
+    <ul class="product-grid">{% for p in featured %}<li>{% include "store/_card.html" %}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  {% for b in strip_banners|slice:":1" %}
+  <a class="strip-banner" href="{{ b.link_url|default:'#' }}">
+    <picture>
+      {% if b.image_mobile %}<source media="(max-width: 600px)" srcset="{{ b.image_mobile.url }}">{% endif %}
+      <img src="{{ b.image.url }}" alt="{{ b.title }}" loading="lazy">
+    </picture>
+  </a>
+  {% endfor %}
+
+  {% if sale_products %}
+  <section class="section" aria-labelledby="h-sale">
+    <div class="section-head"><h2 id="h-sale">Đang <span>giảm giá</span></h2><a href="{% url 'store:sale' %}">Xem tất cả {% icon "chevron-right" %}</a></div>
+    <ul class="product-grid">{% for p in sale_products %}<li>{% include "store/_card.html" %}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  {% if new_products %}
+  <section class="section" aria-labelledby="h-new">
+    <div class="section-head"><h2 id="h-new">Hàng <span>mới về</span></h2><a href="{% url 'store:new' %}">Xem tất cả {% icon "chevron-right" %}</a></div>
+    <ul class="product-grid">{% for p in new_products %}<li>{% include "store/_card.html" %}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  {% if brands %}
+  <section class="section" aria-labelledby="h-brands">
+    <div class="section-head"><h2 id="h-brands">Thương hiệu</h2><a href="{% url 'store:brands' %}">Tất cả thương hiệu {% icon "chevron-right" %}</a></div>
+    <div class="brand-strip">
+      {% for b in brands %}<a class="brand-chip" href="{{ b.get_absolute_url }}"><img src="{{ b.logo.url }}" alt="{{ b.name }}" loading="lazy"></a>{% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if not featured and not new_products and not sale_products %}
+  <section class="section">
+    <div class="empty">
+      {% icon "bag" %}
+      <h2>Cửa hàng đang cập nhật sản phẩm</h2>
+      <p>Bạn vui lòng quay lại sau{% if site.hotline %} hoặc gọi {{ site.hotline }} để được tư vấn{% endif %}.</p>
+      <a class="btn btn-outline" href="{% url 'store:new' %}">Xem tất cả sản phẩm</a>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

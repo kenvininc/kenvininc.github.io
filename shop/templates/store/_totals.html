@@ -1,0 +1,9 @@
+{% load shop %}<dl>
+  <dt>Tiền hàng</dt><dd>{{ quote.subtotal|vnd }}</dd>
+  <dt>Giảm giá{% if quote.coupon %} ({{ quote.coupon.code }}){% endif %}</dt><dd>{% if quote.discount %}-{{ quote.discount|vnd }}{% else %}0 ₫{% endif %}</dd>
+  <dt>Phí giao hàng</dt><dd>{% if quote.shipping_fee %}{{ quote.shipping_fee|vnd }}{% else %}Miễn phí{% endif %}</dd>
+  <dt class="total-row">Tổng thanh toán</dt><dd>{{ quote.total|vnd }}</dd>
+</dl>
+{% if site.free_shipping_threshold and quote.shipping_fee %}
+<p class="note">Miễn phí giao hàng cho đơn từ {{ site.free_shipping_threshold|vnd }} (tiền hàng sau giảm giá).</p>
+{% endif %}

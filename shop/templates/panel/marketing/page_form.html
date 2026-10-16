@@ -1,0 +1,37 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}{% if object %}{{ object.title }}{% else %}Thêm trang{% endif %}{% endblock %}
+{% block content %}
+<div class="page-head"><h1>{% if object %}{{ object.title }}{% else %}Thêm trang{% endif %}</h1>
+  <div class="actions">{% if object %}<a class="btn btn-secondary" href="{{ object.get_absolute_url }}" target="_blank" rel="noopener">{% icon "eye" %} Xem trước</a>{% endif %}<a class="btn btn-secondary" href="{% url 'panel:pages' %}">Danh sách</a></div></div>
+{% if form.errors %}<div class="alert alert-error" role="alert">{% icon "alert" %}<div>Vui lòng kiểm tra lại các ô được đánh dấu.</div></div>{% endif %}
+<form method="post" novalidate>{% csrf_token %}
+<div class="two-col">
+  <div class="card">
+    {% include "panel/_field.html" with field=form.title %}
+    <p class="help-box">Định dạng: dòng trống để tách đoạn; <code>## Tiêu đề</code>; <code>- mục</code> cho gạch đầu dòng; <code>**chữ đậm**</code>; liên kết <code>[chữ](https://...)</code>. Không nhập HTML.</p>
+    {% include "panel/_field.html" with field=form.body %}
+  </div>
+  <div>
+    <div class="card">
+      {% include "panel/_field.html" with field=form.status %}
+      <p class="help">Nháp: chỉ người quản trị xem trước được. Đã xuất bản: khách xem được.</p>
+      {% include "panel/_field.html" with field=form.show_in_footer %}
+      {% include "panel/_field.html" with field=form.sort_order %}
+    </div>
+    <div class="card">
+      <h2>SEO</h2>
+      {% include "panel/_field.html" with field=form.slug %}
+      {% include "panel/_field.html" with field=form.seo_title %}
+      {% include "panel/_field.html" with field=form.seo_description %}
+    </div>
+  </div>
+</div>
+<div class="sticky-actions form-actions">
+  <button class="btn" type="submit" data-submit-once>Lưu</button>
+  <button class="btn btn-secondary" type="submit" name="then" value="preview">Lưu và xem trước</button>
+</div>
+</form>
+{% if object %}
+<form method="post" action="{% url 'panel:page_delete' object.pk %}" style="margin-top:16px" data-confirm="Xóa trang này?">{% csrf_token %}<button class="btn btn-danger" type="submit">{% icon "trash" %} Xóa trang</button></form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "store/base.html" %}{% load shop %}
+{% block title %}{% if seo_obj.seo_title %}{{ seo_obj.seo_title }}{% else %}{{ title }} | {{ site.shop_name }}{% endif %}{% endblock %}
+{% block description %}{% if seo_obj.seo_description %}{{ seo_obj.seo_description }}{% elif seo_obj.description %}{{ seo_obj.description|truncatechars:160 }}{% else %}{{ site.seo_description }}{% endif %}{% endblock %}
+{% block meta_extra %}{% if is_search %}<meta name="robots" content="noindex">{% endif %}{% if seo_obj %}<link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ seo_obj.get_absolute_url }}">{% endif %}{% endblock %}
+{% block content %}
+<div class="container">
+  <nav class="breadcrumb" aria-label="Đường dẫn">
+    <ol>
+      <li><a href="{% url 'store:home' %}">Trang chủ</a></li>
+      {% if category.parent %}<li><a href="{{ category.parent.get_absolute_url }}">{{ category.parent.name }}</a></li>{% endif %}
+      {% if brand %}<li><a href="{% url 'store:brands' %}">Thương hiệu</a></li>{% endif %}
+      <li aria-current="page">{% if category %}{{ category.name }}{% elif brand %}{{ brand.name }}{% else %}{{ title }}{% endif %}</li>
+    </ol>
+  </nav>
+
+  <div class="listing-head">
+    <div>
+      <h1>{{ title }}</h1>
+      <span class="count">{{ page_obj.paginator.count }} sản phẩm</span>
+    </div>
+  </div>
+
+  {% if children %}
+  <div class="subcats">
+    {% for c in children %}<a class="chip" href="{{ c.get_absolute_url }}">{{ c.name }}</a>{% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="listing">
+    <form class="filters" id="filters" method="get" aria-label="Bộ lọc">
+      {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+      <input type="hidden" name="sap-xep" value="{{ sort }}">
+      <div class="drawer-head">
+        <h2>Bộ lọc</h2>
+        <button class="drawer-close" type="button" data-filter-close>{% icon "x" label="Đóng bộ lọc" %}</button>
+      </div>
+      <div class="drawer-body">
+        {% if facet_cats %}
+        <div class="filter-group"><fieldset>
+          <legend>Danh mục</legend>
+          <div class="filter-scroll">
+            {% for c in facet_cats %}
+            <label class="check"><input type="checkbox" name="danh-muc" value="{{ c.slug }}" {% if c.slug in selected_cats %}checked{% endif %}> {{ c.name }}</label>
+            {% endfor %}
+          </div>
+        </fieldset></div>
+        {% endif %}
+        {% if facet_brands %}
+        <div class="filter-group"><fieldset>
+          <legend>Thương hiệu</legend>
+          <div class="filter-scroll">
+            {% for b in facet_brands %}
+            <label class="check"><input type="checkbox" name="thuong-hieu" value="{{ b.slug }}" {% if b.slug in selected_brands %}checked{% endif %}> {{ b.name }}</label>
+            {% endfor %}
+          </div>
+        </fieldset></div>
+        {% endif %}
+        <div class="filter-group"><fieldset>
+          <legend>Khoảng giá (đ)</legend>
+          <div class="price-inputs">
+            <label><span class="sr-only">Giá từ</span><input type="number" name="gia-tu" min="0" step="1000" inputmode="numeric" placeholder="Từ" value="{{ price_min|default_if_none:'' }}"></label>
+            <label><span class="sr-only">Giá đến</span><input type="number" name="gia-den" min="0" step="1000" inputmode="numeric" placeholder="Đến" value="{{ price_max|default_if_none:'' }}"></label>
+          </div>
+        </fieldset></div>
+        <div class="filter-group">
+          <label class="check"><input type="checkbox" name="con-hang" value="1" {% if in_stock %}checked{% endif %}> Chỉ hiện sản phẩm còn hàng</label>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <a class="btn btn-ghost" href="?{% if query %}q={{ query|urlencode }}{% endif %}">Xóa lọc</a>
+        <button class="btn" type="submit">Áp dụng</button>
+      </div>
+    </form>
+
+    <div>
+      <div class="toolbar">
+        <button class="btn btn-ghost filter-open" type="button" data-filter-open aria-controls="filters">{% icon "filter" %} Bộ lọc{% if active_filters %} (đang lọc){% endif %}</button>
+        <form method="get" data-autosubmit>
+          {% for key, values in request.GET.lists %}{% if key != "sap-xep" and key != "trang" %}{% for v in values %}<input type="hidden" name="{{ key }}" value="{{ v }}">{% endfor %}{% endif %}{% endfor %}
+          <label for="sort" class="sr-only">Sắp xếp</label>
+          <select id="sort" name="sap-xep">
+            {% for key, label in sorts %}<option value="{{ key }}" {% if key == sort %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <noscript><button class="btn btn-ghost" type="submit">Sắp xếp</button></noscript>
+        </form>
+      </div>
+
+      {% if products %}
+      <ul class="product-grid">{% for p in products %}<li>{% include "store/_card.html" %}</li>{% endfor %}</ul>
+      {% include "store/_pagination.html" %}
+      {% else %}
+      <div class="empty">
+        {% icon "search" %}
+        {% if is_search and not query %}
+        <h2>Bạn muốn tìm gì?</h2><p>Nhập tên sản phẩm hoặc thương hiệu vào ô tìm kiếm.</p>
+        {% elif active_filters %}
+        <h2>Không có sản phẩm phù hợp bộ lọc</h2><p>Thử bỏ bớt điều kiện lọc.</p>
+        <a class="btn btn-outline" href="?{% if query %}q={{ query|urlencode }}{% endif %}">Xóa bộ lọc</a>
+        {% elif is_search %}
+        <h2>Không tìm thấy sản phẩm</h2><p>Thử từ khóa khác, ví dụ tên thương hiệu hoặc loại sản phẩm.</p>
+        {% else %}
+        <h2>Chưa có sản phẩm</h2><p>Danh mục này đang được cập nhật.</p>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

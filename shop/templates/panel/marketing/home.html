@@ -1,0 +1,48 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Trang chủ{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Nội dung trang chủ</h1><div class="actions"><a class="btn btn-secondary" href="/" target="_blank" rel="noopener">{% icon "eye" %} Xem trang chủ</a><a class="btn btn-secondary" href="{% url 'panel:banners' %}">Quản lý banner</a></div></div>
+<div class="two-col">
+  <div>
+    {% for flag, title, items in sections %}
+    <div class="card">
+      <div class="card-head"><h2>{{ title }} ({{ items.count }})</h2></div>
+      <p class="muted" style="margin-top:-6px">Trang chủ hiển thị tối đa 10 sản phẩm đang bán, mới cập nhật trước.</p>
+      {% if items %}
+      <table class="table"><tbody>
+      {% for p in items %}<tr><td><a href="{% url 'panel:product_edit' p.pk %}">{{ p.name }}</a> {% if p.status != "published" %}<span class="badge badge-{{ p.status }}">{{ p.get_status_display }}</span>{% endif %}</td>
+        <td class="right"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="remove"><input type="hidden" name="flag" value="{{ flag }}"><input type="hidden" name="product_id" value="{{ p.pk }}"><button class="btn btn-secondary btn-sm" type="submit">Bỏ</button></form></td></tr>{% endfor %}
+      </tbody></table>
+      {% else %}<p class="muted">Chưa chọn sản phẩm nào. Khu vực này sẽ không hiện trên trang chủ.</p>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <div>
+    <div class="card">
+      <h2>Thêm sản phẩm vào trang chủ</h2>
+      <form method="get" class="filters"><div class="field grow"><label for="q">Tìm sản phẩm</label><input id="q" type="search" name="q" value="{{ q }}"></div><button class="btn btn-secondary" type="submit">Tìm</button></form>
+      {% if q %}
+      {% for p in results %}
+      <div style="border-top:1px solid var(--line);padding:8px 0">
+        <div><strong>{{ p.name }}</strong> <span class="badge badge-{{ p.status }}">{{ p.get_status_display }}</span></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+          {% for flag, title, items in sections %}
+          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="add"><input type="hidden" name="flag" value="{{ flag }}"><input type="hidden" name="product_id" value="{{ p.pk }}"><button class="btn btn-secondary btn-sm" type="submit">+ {{ title }}</button></form>
+          {% endfor %}
+        </div>
+      </div>
+      {% empty %}<p class="muted">Không tìm thấy sản phẩm.</p>{% endfor %}
+      {% endif %}
+    </div>
+    <div class="card">
+      <h2>Danh mục nổi bật</h2>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="categories">
+        <div class="field"><div class="choices" style="display:grid;gap:6px">
+          {% for c in all_categories %}<label class="field-check" style="margin:0"><input type="checkbox" name="home_categories" value="{{ c.pk }}" {% if c.show_on_home %}checked{% endif %}> {{ c }}</label>{% empty %}<p class="muted">Chưa có danh mục.</p>{% endfor %}
+        </div></div>
+        <button class="btn" type="submit">Lưu danh mục</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

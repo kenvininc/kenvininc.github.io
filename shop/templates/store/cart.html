@@ -1,0 +1,66 @@
+{% extends "store/base.html" %}{% load shop %}
+{% block title %}Giỏ hàng | {{ site.shop_name }}{% endblock %}
+{% block meta_extra %}<meta name="robots" content="noindex">{% endblock %}
+{% block content %}
+<div class="container">
+  <h1 class="page-title">Giỏ hàng</h1>
+  {% if quote.lines %}
+  <div class="cart-layout">
+    <div>
+      <form method="post" action="{% url 'store:cart_update' %}" id="cart-form">
+        {% csrf_token %}
+        <ul class="cart-lines">
+          {% for line in quote.lines %}{% with v=line.variant p=line.variant.product %}
+          <li class="cart-line">
+            <a class="thumb" href="{{ p.get_absolute_url }}">
+              {% with img=v.image|default:p.main_image %}{% if img %}<img src="{{ img.thumb_url }}" alt="">{% else %}<span class="no-image">{% icon "image" %}</span>{% endif %}{% endwith %}
+            </a>
+            <div>
+              <h3><a href="{{ p.get_absolute_url }}">{{ p.name }}</a></h3>
+              {% if v.value %}<div class="variant">{{ p.variant_attribute.name|default:"Phân loại" }}: {{ v.value }}</div>{% endif %}
+              <div class="unit">{{ line.unit_price|vnd }}{% if v.is_discounted %} <span class="price-old">{{ v.compare_at_price|vnd }}</span>{% endif %}</div>
+              <div class="controls">
+                <div class="qty" data-qty>
+                  <button type="button" data-qty-dec>{% icon "minus" label="Giảm số lượng" %}</button>
+                  <label class="sr-only" for="qty_{{ v.pk }}">Số lượng {{ p.name }}</label>
+                  <input id="qty_{{ v.pk }}" type="number" name="qty_{{ v.pk }}" value="{{ line.quantity }}" min="0" max="{{ site.max_qty_per_item }}" inputmode="numeric" data-autosave>
+                  <button type="button" data-qty-inc>{% icon "plus" label="Tăng số lượng" %}</button>
+                </div>
+                <button class="link-btn" type="submit" form="rm-{{ v.pk }}">{% icon "trash" %} Xóa</button>
+              </div>
+              {% if line.problem %}<p class="line-problem">{% icon "alert" %} {{ line.problem }}</p>{% endif %}
+            </div>
+            <div class="line-total">{{ line.line_total|vnd }}</div>
+          </li>
+          {% endwith %}{% endfor %}
+        </ul>
+        <p style="margin-top:12px"><button class="btn btn-ghost" type="submit">Cập nhật giỏ hàng</button></p>
+      </form>
+      {% for line in quote.lines %}
+      <form id="rm-{{ line.variant.pk }}" method="post" action="{% url 'store:cart_remove' %}" hidden>{% csrf_token %}<input type="hidden" name="variant_id" value="{{ line.variant.pk }}"></form>
+      {% endfor %}
+    </div>
+
+    <aside class="summary" aria-labelledby="sum-h">
+      <h2 id="sum-h">Tóm tắt đơn hàng</h2>
+      {% include "store/_coupon.html" with back="cart" %}
+      {% include "store/_totals.html" %}
+      {% if quote.has_problems %}
+      <p class="alert alert-error" role="alert">{% icon "alert" %} Vui lòng điều chỉnh các sản phẩm được đánh dấu trước khi đặt hàng.</p>
+      <button class="btn btn-block btn-lg" type="button" disabled>Tiến hành đặt hàng</button>
+      {% else %}
+      <a class="btn btn-block btn-lg" href="{% url 'store:checkout' %}">Tiến hành đặt hàng</a>
+      {% endif %}
+      <a class="btn btn-ghost btn-block" href="{% url 'store:home' %}" style="margin-top:10px">Tiếp tục mua sắm</a>
+    </aside>
+  </div>
+  {% else %}
+  <div class="empty">
+    {% icon "bag" %}
+    <h2>Giỏ hàng đang trống</h2>
+    <p>Hãy chọn vài sản phẩm bạn thích nhé.</p>
+    <a class="btn" href="{% url 'store:home' %}">Mua sắm ngay</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

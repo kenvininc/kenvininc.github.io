@@ -1,0 +1,16 @@
+{% extends "store/base.html" %}{% load shop %}
+{% block title %}Thương hiệu | {{ site.shop_name }}{% endblock %}
+{% block content %}
+<div class="container">
+  <h1 class="page-title">Thương hiệu</h1>
+  {% if brands %}
+  <div class="brand-strip">
+    {% for b in brands %}
+    <a class="brand-chip" href="{{ b.get_absolute_url }}">{% if b.logo %}<img src="{{ b.logo.url }}" alt="{{ b.name }}" loading="lazy">{% else %}{{ b.name }}{% endif %}</a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">{% icon "award" %}<h2>Chưa có thương hiệu</h2><p>Danh sách thương hiệu đang được cập nhật.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

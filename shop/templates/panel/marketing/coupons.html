@@ -1,0 +1,21 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Mã giảm giá{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Mã giảm giá</h1><div class="actions"><a class="btn" href="{% url 'panel:coupon_add' %}">{% icon "plus" %} Thêm mã</a></div></div>
+<p class="help-box">Mỗi đơn dùng tối đa 1 mã. Mã tính trên tiền hàng (sau giá khuyến mãi của sản phẩm), không giảm phí giao hàng. Điều kiện được kiểm tra lại khi khách bấm Đặt hàng. Đơn bị hủy sẽ trả lại lượt dùng mã.</p>
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>Mã</th><th>Giảm</th><th class="num">Đơn tối thiểu</th><th>Thời gian</th><th class="num">Đã dùng</th><th>Trạng thái</th></tr></thead>
+  <tbody>
+  {% for c in page_obj %}
+    <tr><td><a class="mono" href="{% url 'panel:coupon_edit' c.pk %}"><strong>{{ c.code }}</strong></a><br><span class="muted">{{ c.description }}</span></td>
+      <td>{% if c.discount_type == "percent" %}{{ c.value }}%{% if c.max_discount %} (tối đa {{ c.max_discount|vnd }}){% endif %}{% else %}{{ c.value|vnd }}{% endif %}</td>
+      <td class="num">{{ c.min_order_value|vnd }}</td>
+      <td class="muted nowrap">{{ c.starts_at|date:"d/m/Y H:i"|default:"Không giới hạn" }}<br>→ {{ c.ends_at|date:"d/m/Y H:i"|default:"Không giới hạn" }}</td>
+      <td class="num">{{ c.used_count }}{% if c.usage_limit %} / {{ c.usage_limit }}{% endif %}</td>
+      <td><span class="badge {% if c.status_label == 'Đang áp dụng' %}badge-ok{% else %}badge-warn{% endif %}">{{ c.status_label }}</span></td></tr>
+  {% empty %}
+    <tr class="empty-row"><td colspan="6">Chưa có mã giảm giá.</td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{% include "panel/_pagination.html" %}
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Đơn hàng{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Đơn hàng</h1>
+  <div class="actions"><a class="btn btn-secondary" href="{% url 'panel:order_export' %}?{{ request.GET.urlencode }}">{% icon "download" %} Xuất Excel (theo bộ lọc)</a></div></div>
+<div class="filters" style="gap:6px">
+  <a class="btn btn-secondary btn-sm" href="?status=new">Mới ({{ counts.new }})</a>
+  <a class="btn btn-secondary btn-sm" href="?status=confirmed">Đã xác nhận ({{ counts.confirmed }})</a>
+  <a class="btn btn-secondary btn-sm" href="?status=packing">Đang đóng gói ({{ counts.packing }})</a>
+</div>
+<form method="get" class="filters">
+  {% for field in form %}<div class="field{% if field.name == 'q' %} grow{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endfor %}
+  <button class="btn btn-secondary" type="submit">{% icon "search" %} Lọc</button>
+  {% if request.GET %}<a class="btn btn-secondary" href="{% url 'panel:orders' %}">Xóa lọc</a>{% endif %}
+</form>
+<form method="get" action="{% url 'panel:order_print_many' %}" target="_blank" data-bulk-form>
+  <div class="bulk-bar">
+    <span>Với đơn đã chọn:</span>
+    <select name="loai" aria-label="Loại phiếu"><option value="dong-goi">In phiếu đóng gói</option><option value="hoa-don">In phiếu giao hàng</option></select>
+    <button class="btn btn-secondary btn-sm" type="submit" data-bulk-submit disabled>{% icon "printer" %} In</button>
+    <span class="muted" data-bulk-count>Chưa chọn đơn nào</span>
+  </div>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th><input type="checkbox" data-select-all aria-label="Chọn tất cả"></th><th>Mã đơn</th><th>Thời gian</th><th>Khách hàng</th><th class="num">Tổng</th><th>Xử lý</th><th>Thanh toán</th><th>Vận đơn</th></tr></thead>
+    <tbody>
+    {% for o in page_obj %}
+      <tr><td><input type="checkbox" name="ids" value="{{ o.pk }}" aria-label="Chọn {{ o.code }}" data-row-check></td>
+        <td><a class="mono" href="{% url 'panel:order_detail' o.pk %}"><strong>{{ o.code }}</strong></a></td>
+        <td class="nowrap muted">{{ o.created_at|date:"d/m/Y H:i" }}</td>
+        <td>{{ o.customer_name }}<br><span class="muted">{{ o.phone }}</span></td>
+        <td class="num">{{ o.total|vnd }}</td>
+        <td><span class="badge badge-{{ o.status }}">{{ o.get_status_display }}</span></td>
+        <td><span class="badge badge-{{ o.payment_status }}">{{ o.get_payment_status_display }}</span><br><span class="muted" style="font-size:12px">{% if o.payment_method == "cod" %}COD{% else %}Chuyển khoản{% endif %}</span></td>
+        <td class="mono">{{ o.tracking_code }}</td></tr>
+    {% empty %}
+      <tr class="empty-row"><td colspan="8">{% if request.GET %}Không có đơn phù hợp bộ lọc.{% else %}Chưa có đơn hàng.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+</form>
+{% include "panel/_pagination.html" %}
+{% endblock %}

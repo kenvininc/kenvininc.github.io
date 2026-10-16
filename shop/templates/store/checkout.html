@@ -1,0 +1,62 @@
+{% extends "store/base.html" %}{% load shop %}
+{% block title %}Đặt hàng | {{ site.shop_name }}{% endblock %}
+{% block meta_extra %}<meta name="robots" content="noindex">{% endblock %}
+{% block content %}
+<div class="container">
+  <h1 class="page-title">Thông tin đặt hàng</h1>
+  {% if error %}<div class="alert alert-error" role="alert">{% icon "alert" %}<div>{{ error }} <a href="{% url 'store:cart' %}"><strong>Về giỏ hàng</strong></a></div></div>{% endif %}
+  {% if form.errors and not error %}<div class="alert alert-error" role="alert" tabindex="-1" data-focus-on-load>{% icon "alert" %}<div>Vui lòng kiểm tra lại các ô được đánh dấu bên dưới.</div></div>{% endif %}
+  {% if no_methods %}
+  <div class="alert alert-warning">{% icon "info" %}<div>Cửa hàng chưa bật phương thức thanh toán nào nên tạm thời chưa nhận đặt hàng online{% if site.hotline %}. Vui lòng gọi {{ site.hotline }} để đặt hàng{% endif %}.</div></div>
+  {% endif %}
+  <form method="post" class="checkout-layout" novalidate data-checkout>
+    {% csrf_token %}
+    {{ form.idempotency_key }}
+    <div>
+      <section class="panel-box" aria-labelledby="h-ship">
+        <h2 id="h-ship"><span class="step-num">1</span> Người nhận</h2>
+        <div class="grid-2">
+          {% include "store/_field.html" with field=form.customer_name %}
+          {% include "store/_field.html" with field=form.phone %}
+        </div>
+        {% include "store/_field.html" with field=form.email %}
+        {% include "store/_field.html" with field=form.address %}
+        {% include "store/_field.html" with field=form.customer_note %}
+        {% if site.shipping_note %}<p class="help">{% icon "truck" %} {{ site.shipping_note }}</p>{% endif %}
+      </section>
+      <section class="panel-box" aria-labelledby="h-pay">
+        <h2 id="h-pay"><span class="step-num">2</span> Thanh toán</h2>
+        <fieldset class="field{% if form.payment_method.errors %} has-error{% endif %}" style="border:0;padding:0;margin:0">
+          <legend class="sr-only">Phương thức thanh toán</legend>
+          <div class="radio-cards">
+            {% for radio in form.payment_method %}
+            <label class="radio-card" for="{{ radio.id_for_label }}">{{ radio.tag }}<span>{{ radio.choice_label }}
+              {% if radio.data.value == "bank_transfer" %}<br><small class="help">Thông tin chuyển khoản hiển thị sau khi đặt hàng. Đơn được xác nhận khi shop nhận được tiền.</small>{% endif %}
+            </span></label>
+            {% endfor %}
+          </div>
+          {% for e in form.payment_method.errors %}<div class="error">{% icon "alert" %} {{ e }}</div>{% endfor %}
+        </fieldset>
+      </section>
+    </div>
+    <aside class="summary" aria-labelledby="h-sum">
+      <h2 id="h-sum">Đơn hàng ({{ quote.lines|length }} sản phẩm)</h2>
+      <ul class="mini-lines">
+        {% for line in quote.lines %}{% with v=line.variant p=line.variant.product %}
+        <li class="mini-line">
+          <span class="thumb">{% with img=v.image|default:p.main_image %}{% if img %}<img src="{{ img.thumb_url }}" alt="">{% endif %}{% endwith %}<span class="q">{{ line.quantity }}</span></span>
+          <span>{{ p.name }}{% if v.value %}<small>{{ v.value }}</small>{% endif %}</span>
+          <strong>{{ line.line_total|vnd }}</strong>
+        </li>
+        {% endwith %}{% endfor %}
+      </ul>
+      {% include "store/_totals.html" %}
+      <button class="btn btn-block btn-lg" type="submit" data-submit-once {% if no_methods %}disabled{% endif %}>Đặt hàng</button>
+      <p class="note">Giá và tồn kho được kiểm tra lại khi bạn bấm Đặt hàng.</p>
+    </aside>
+  </form>
+  <div style="max-width:400px;margin-left:auto">
+    {% include "store/_coupon.html" with back="checkout" %}
+  </div>
+</div>
+{% endblock %}

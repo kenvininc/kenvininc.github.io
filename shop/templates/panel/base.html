@@ -1,0 +1,91 @@
+{% load static shop %}<!doctype html>
+<html lang="vi" style="--brand: {{ site.primary_color|default:'#B23A62' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>{% block title %}Quản trị{% endblock %} · {{ site.shop_name }}</title>
+  <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+  <link rel="stylesheet" href="{% static 'css/panel.css' %}">
+  <script src="{% static 'js/panel.js' %}" defer></script>
+</head>
+<body>
+{% with p=panel_perms path=request.path %}
+<div class="layout">
+  <aside class="sidebar" id="sidebar" aria-label="Menu quản trị">
+    <a class="brand" href="{% url 'panel:dashboard' %}"><span>K</span> {{ site.shop_name }}</a>
+    <nav>
+      <div class="nav-group">
+        <a href="{% url 'panel:dashboard' %}" class="{% if path == '/admin/' %}active{% endif %}">{% icon "chart" %} Tổng quan</a>
+      </div>
+      {% if "view_orders" in p %}
+      <div class="nav-group">
+        <div class="nav-group-title">Bán hàng</div>
+        <a href="{% url 'panel:orders' %}" class="{% if '/admin/don-hang/' in path %}active{% endif %}">{% icon "receipt" %} Đơn hàng</a>
+      </div>
+      {% endif %}
+      {% if "manage_products" in p or "manage_stock" in p or "manage_prices" in p or "import_export" in p %}
+      <div class="nav-group">
+        <div class="nav-group-title">Sản phẩm</div>
+        {% if "manage_products" in p %}
+        <a href="{% url 'panel:products' %}" class="{% if '/admin/san-pham/' in path %}active{% endif %}">{% icon "package" %} Sản phẩm</a>
+        <a href="{% url 'panel:categories' %}" class="{% if '/admin/danh-muc/' in path %}active{% endif %}">{% icon "layers" %} Danh mục</a>
+        <a href="{% url 'panel:brands' %}" class="{% if '/admin/thuong-hieu/' in path %}active{% endif %}">{% icon "award" %} Thương hiệu</a>
+        <a href="{% url 'panel:attributes' %}" class="{% if '/admin/thuoc-tinh/' in path %}active{% endif %}">{% icon "sliders" %} Thuộc tính</a>
+        {% endif %}
+        {% if "manage_stock" in p or "manage_products" in p %}
+        <a href="{% url 'panel:stock' %}" class="{% if '/admin/ton-kho/' in path %}active{% endif %}">{% icon "grid" %} Tồn kho</a>
+        {% endif %}
+        {% if "manage_prices" in p %}
+        <a href="{% url 'panel:bulk_price' %}" class="{% if '/admin/gia/hang-loat/' in path %}active{% endif %}">{% icon "tag" %} Cập nhật giá hàng loạt</a>
+        <a href="{% url 'panel:price_history' %}" class="{% if '/admin/gia/lich-su/' in path %}active{% endif %}">{% icon "history" %} Lịch sử giá</a>
+        {% endif %}
+        {% if "import_export" in p %}
+        <a href="{% url 'panel:import' %}" class="{% if '/admin/excel/' in path %}active{% endif %}">{% icon "upload" %} Nhập / xuất Excel</a>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if "manage_promotions" in p or "manage_content" in p %}
+      <div class="nav-group">
+        <div class="nav-group-title">Marketing & nội dung</div>
+        {% if "manage_promotions" in p %}<a href="{% url 'panel:coupons' %}" class="{% if '/admin/khuyen-mai/' in path %}active{% endif %}">{% icon "percent" %} Mã giảm giá</a>{% endif %}
+        {% if "manage_content" in p %}
+        <a href="{% url 'panel:home_config' %}" class="{% if '/admin/trang-chu/' in path %}active{% endif %}">{% icon "home" %} Trang chủ</a>
+        <a href="{% url 'panel:banners' %}" class="{% if '/admin/banner/' in path %}active{% endif %}">{% icon "image" %} Banner</a>
+        <a href="{% url 'panel:pages' %}" class="{% if '/admin/trang/' in path %}active{% endif %}">{% icon "file" %} Trang nội dung</a>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if "manage_settings" in p or "manage_users" in p or "view_audit" in p %}
+      <div class="nav-group">
+        <div class="nav-group-title">Hệ thống</div>
+        {% if "manage_settings" in p %}<a href="{% url 'panel:settings' %}" class="{% if '/admin/cai-dat/' in path %}active{% endif %}">{% icon "store" %} Cấu hình cửa hàng</a>{% endif %}
+        {% if "manage_users" in p %}<a href="{% url 'panel:users' %}" class="{% if '/admin/tai-khoan/' in path %}active{% endif %}">{% icon "users" %} Tài khoản</a>{% endif %}
+        {% if "view_audit" in p %}<a href="{% url 'panel:audit' %}" class="{% if '/admin/nhat-ky/' in path %}active{% endif %}">{% icon "history" %} Nhật ký thao tác</a>{% endif %}
+      </div>
+      {% endif %}
+    </nav>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="false" data-sidebar-toggle>{% icon "menu" label="Mở menu" %}</button>
+      <a href="/" target="_blank" rel="noopener">{% icon "external" %} Xem cửa hàng</a>
+      <div class="user">
+        <span class="user-name muted">{% icon "user" %} {{ request.user.get_full_name|default:request.user.username }}</span>
+        <a href="{% url 'panel:change_password' %}">Đổi mật khẩu</a>
+        <form method="post" action="{% url 'panel:logout' %}">{% csrf_token %}<button class="btn btn-secondary btn-sm" type="submit">{% icon "logout" %} Đăng xuất</button></form>
+      </div>
+    </header>
+    <main class="content" id="main">
+      {% if messages %}
+      <div role="status">
+        {% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}error{% elif m.tags == 'warning' %}warning{% elif m.tags == 'success' %}success{% else %}info{% endif %}">{% if m.tags == 'success' %}{% icon "check" %}{% else %}{% icon "info" %}{% endif %}<div>{{ m }}</div></div>{% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+{% endwith %}
+</body>
+</html>

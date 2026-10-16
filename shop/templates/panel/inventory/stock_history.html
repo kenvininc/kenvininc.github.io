@@ -1,0 +1,12 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Lịch sử tồn kho{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Lịch sử xuất nhập tồn kho</h1><div class="actions"><a class="btn btn-secondary" href="{% url 'panel:stock' %}">Tồn kho</a></div></div>
+<form method="get" class="filters">
+  <div class="field grow"><label for="q">SKU, tên sản phẩm, lý do</label><input id="q" type="search" name="q" value="{{ request.GET.q }}"></div>
+  <div class="field"><label for="loai">Loại</label><select id="loai" name="loai"><option value="">Tất cả</option>{% for k, l in kinds %}<option value="{{ k }}" {% if request.GET.loai == k %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+  <button class="btn btn-secondary" type="submit">Lọc</button>
+</form>
+{% include "panel/inventory/_movements.html" with movements=page_obj %}
+{% include "panel/_pagination.html" %}
+{% endblock %}

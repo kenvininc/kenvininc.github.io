@@ -1,0 +1,170 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}{% if product %}{{ product.name }}{% else %}Thêm sản phẩm{% endif %}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>{% if product %}{{ product.name }}{% else %}Thêm sản phẩm{% endif %}</h1>
+    {% if product %}<span class="badge badge-{{ product.status }}">{{ product.get_status_display }}</span> <span class="muted mono">{{ product.code }}</span>{% endif %}
+  </div>
+  <div class="actions">
+    {% if product %}<a class="btn btn-secondary" href="{{ product.get_absolute_url }}" target="_blank" rel="noopener">{% icon "eye" %} {% if product.status == "published" %}Xem trên cửa hàng{% else %}Xem trước{% endif %}</a>{% endif %}
+    <a class="btn btn-secondary" href="{% url 'panel:products' %}">Danh sách</a>
+  </div>
+</div>
+
+{% if error %}<div class="alert alert-error" role="alert" tabindex="-1" data-focus-on-load>{% icon "alert" %}<div>{{ error }}
+  {% if formset.non_form_errors %}<ul>{% for e in formset.non_form_errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}</div></div>{% endif %}
+
+<form method="post" enctype="multipart/form-data" novalidate id="product-form">
+  {% csrf_token %}
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <h2>Thông tin chung</h2>
+        {% include "panel/_field.html" with field=form.name %}
+        <div class="grid grid-2">
+          {% include "panel/_field.html" with field=form.brand %}
+          {% include "panel/_field.html" with field=form.category %}
+        </div>
+        {% include "panel/_field.html" with field=form.short_description %}
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Giá, SKU và tồn kho</h2></div>
+        {% include "panel/_field.html" with field=form.variant_attribute %}
+        <p class="help-box">Mỗi dòng là 1 biến thể (ví dụ 1 dung tích hoặc 1 màu son). Sản phẩm chỉ có 1 loại thì để 1 dòng và bỏ trống “Giá trị biến thể”.
+          Giá nhập số nguyên, đơn vị đồng (ví dụ <code>159000</code>). “Giá gốc” chỉ nhập khi đang giảm giá và phải lớn hơn giá bán.
+          {% if not can_price %}<br><strong>Bạn không có quyền sửa giá.</strong>{% endif %}{% if not can_stock %}<br><strong>Bạn không có quyền sửa tồn kho.</strong>{% endif %}</p>
+        {{ formset.management_form }}
+        <div class="table-wrap">
+          <table class="table variants">
+            <thead><tr><th>Giá trị biến thể</th><th>SKU *</th><th>Giá bán (đ) *</th><th>Giá gốc (đ)</th><th>Tồn kho</th><th>Mã màu</th><th>Ảnh riêng</th><th>Đang bán</th><th>Thứ tự</th><th>Xóa</th></tr></thead>
+            <tbody data-formset-body>
+            {% for f in formset %}
+              <tr class="{% if f.errors %}err{% endif %}" data-formset-row>
+                <td class="w-md">{{ f.id }}{{ f.orig_stock }}{{ f.orig_price }}{{ f.orig_compare }}<label class="sr-only" for="{{ f.value.id_for_label }}">Giá trị biến thể</label>{{ f.value }}</td>
+                <td class="w-md"><label class="sr-only" for="{{ f.sku.id_for_label }}">SKU</label>{{ f.sku }}</td>
+                <td class="w-md"><label class="sr-only" for="{{ f.price.id_for_label }}">Giá bán</label>{% if can_price or not f.instance.pk %}{{ f.price }}{% else %}<input type="hidden" name="{{ f.price.html_name }}" value="{{ f.price.value|default_if_none:'' }}">{{ f.instance.price|vnd }}{% endif %}</td>
+                <td class="w-md"><label class="sr-only" for="{{ f.compare_at_price.id_for_label }}">Giá gốc</label>{% if can_price or not f.instance.pk %}{{ f.compare_at_price }}{% else %}<input type="hidden" name="{{ f.compare_at_price.html_name }}" value="{{ f.compare_at_price.value|default_if_none:'' }}">{{ f.instance.compare_at_price|vnd|default:"—" }}{% endif %}</td>
+                <td class="w-sm"><label class="sr-only" for="{{ f.stock.id_for_label }}">Tồn kho</label>{% if can_stock or not f.instance.pk %}{{ f.stock }}{% else %}<input type="hidden" name="{{ f.stock.html_name }}" value="{{ f.stock.value|default_if_none:'' }}">{{ f.instance.stock }}{% endif %}</td>
+                <td class="w-sm"><label class="sr-only" for="{{ f.color_hex.id_for_label }}">Mã màu</label>{{ f.color_hex }}</td>
+                <td class="w-md"><label class="sr-only" for="{{ f.image.id_for_label }}">Ảnh riêng</label>{{ f.image }}</td>
+                <td><label class="sr-only" for="{{ f.is_active.id_for_label }}">Đang bán</label>{{ f.is_active }}</td>
+                <td class="w-sm"><label class="sr-only" for="{{ f.sort_order.id_for_label }}">Thứ tự</label>{{ f.sort_order }}</td>
+                <td>{% if f.instance.pk in in_orders %}<span class="muted" title="Đã có trong đơn hàng, không xóa được">Đã bán</span>{% else %}<label class="sr-only" for="{{ f.DELETE.id_for_label }}">Xóa</label>{{ f.DELETE }}{% endif %}</td>
+              </tr>
+              {% if f.errors %}<tr class="err-msg"><td colspan="10">{% for name, errs in f.errors.items %}{% for e in errs %}{{ e }} {% endfor %}{% endfor %}</td></tr>{% endif %}
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <template data-formset-template>
+          {% with f=formset.empty_form %}
+          <tr data-formset-row>
+            <td class="w-md">{{ f.id }}<label class="sr-only" for="{{ f.value.id_for_label }}">Giá trị biến thể</label>{{ f.value }}</td>
+            <td class="w-md"><label class="sr-only" for="{{ f.sku.id_for_label }}">SKU</label>{{ f.sku }}</td>
+            <td class="w-md">{{ f.price }}</td>
+            <td class="w-md">{{ f.compare_at_price }}</td>
+            <td class="w-sm">{{ f.stock }}</td>
+            <td class="w-sm">{{ f.color_hex }}</td>
+            <td class="w-md">{{ f.image }}</td>
+            <td>{{ f.is_active }}</td>
+            <td class="w-sm">{{ f.sort_order }}</td>
+            <td>{{ f.DELETE }}</td>
+          </tr>
+          {% endwith %}
+        </template>
+        <p style="margin-top:10px"><button class="btn btn-secondary btn-sm" type="button" data-formset-add>{% icon "plus" %} Thêm biến thể</button></p>
+        <div class="grid grid-2">
+          <div class="field"><label for="price_reason">Lý do đổi giá (nếu có)</label><input id="price_reason" type="text" name="price_reason" maxlength="255" value="{{ request.POST.price_reason }}" placeholder="Ví dụ: NCC tăng giá"></div>
+          <div class="field"><label for="stock_reason">Lý do điều chỉnh tồn kho (bắt buộc khi sửa tồn)</label><input id="stock_reason" type="text" name="stock_reason" maxlength="255" value="{{ request.POST.stock_reason }}" placeholder="Ví dụ: Nhập hàng, kiểm kê"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Nội dung</h2>
+        <p class="help-box">Định dạng: dòng trống để tách đoạn; dòng bắt đầu bằng <code>- </code> là gạch đầu dòng; <code>## </code> là tiêu đề nhỏ; <code>**chữ**</code> in đậm. Không nhập HTML.
+          Chỉ ghi thông tin có nguồn từ nhà sản xuất/nhà phân phối, không tự viết công dụng điều trị.</p>
+        {% include "panel/_field.html" with field=form.description %}
+        {% include "panel/_field.html" with field=form.benefits %}
+        {% include "panel/_field.html" with field=form.ingredients %}
+        {% include "panel/_field.html" with field=form.usage %}
+      </div>
+
+      <div class="card">
+        <h2>SEO</h2>
+        {% include "panel/_field.html" with field=form.slug %}
+        {% include "panel/_field.html" with field=form.seo_title %}
+        {% include "panel/_field.html" with field=form.seo_description %}
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2>Trạng thái</h2>
+        {% include "panel/_field.html" with field=form.status %}
+        <p class="help">Nháp: chưa hiển thị. Đang bán: khách xem và mua được. Ẩn: ngừng hiển thị (giữ lịch sử đơn hàng).</p>
+        {% include "panel/_field.html" with field=form.code %}
+      </div>
+      <div class="card">
+        <h2>Hiển thị trang chủ</h2>
+        {% include "panel/_field.html" with field=form.is_featured %}
+        {% include "panel/_field.html" with field=form.is_new %}
+        {% include "panel/_field.html" with field=form.is_on_sale_section %}
+      </div>
+      <div class="card">
+        <h2>Ảnh</h2>
+        {% include "panel/_field.html" with field=form.new_images %}
+        {% if not product %}<p class="help">Sau khi lưu, bạn có thể đổi thứ tự ảnh, chọn ảnh đại diện và gán ảnh cho từng biến thể.</p>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="sticky-actions form-actions">
+    <button class="btn" type="submit" data-submit-once>Lưu</button>
+    <a class="btn btn-secondary" href="{% url 'panel:products' %}">Hủy</a>
+  </div>
+</form>
+
+{% if product %}
+<div class="card" id="anh" style="margin-top:18px">
+  <div class="card-head"><h2>Quản lý ảnh ({{ images|length }})</h2></div>
+  <form method="post" action="{% url 'panel:product_images' product.pk %}" enctype="multipart/form-data" class="filters">
+    {% csrf_token %}<input type="hidden" name="action" value="upload">
+    <div class="field grow"><label for="images-up">Tải thêm ảnh</label><input id="images-up" type="file" name="images" multiple accept="image/jpeg,image/png,image/webp"></div>
+    <button class="btn btn-secondary" type="submit" data-submit-once>{% icon "upload" %} Tải lên</button>
+  </form>
+  {% if images %}
+  <div class="images">
+    {% for img in images %}
+    <div class="img-card{% if img.is_main %} main{% endif %}">
+      {% if img.is_main %}<span class="badge badge-ok tag">Ảnh đại diện</span>{% endif %}
+      <img src="{{ img.thumb_url }}" alt="{{ img.alt }}">
+      <div class="tools">
+        <form method="post" action="{% url 'panel:product_images' product.pk %}">{% csrf_token %}<input type="hidden" name="image_id" value="{{ img.pk }}"><input type="hidden" name="action" value="up"><button class="icon-btn" type="submit" {% if forloop.first %}disabled{% endif %}>{% icon "arrow-up" label="Đưa lên trước" %}</button></form>
+        <form method="post" action="{% url 'panel:product_images' product.pk %}">{% csrf_token %}<input type="hidden" name="image_id" value="{{ img.pk }}"><input type="hidden" name="action" value="down"><button class="icon-btn" type="submit" {% if forloop.last %}disabled{% endif %}>{% icon "arrow-down" label="Đưa xuống sau" %}</button></form>
+        {% if not img.is_main %}<form method="post" action="{% url 'panel:product_images' product.pk %}">{% csrf_token %}<input type="hidden" name="image_id" value="{{ img.pk }}"><input type="hidden" name="action" value="main"><button class="icon-btn" type="submit">{% icon "star" label="Chọn làm ảnh đại diện" %}</button></form>{% endif %}
+        <form method="post" action="{% url 'panel:product_images' product.pk %}" data-confirm="Xóa ảnh này?">{% csrf_token %}<input type="hidden" name="image_id" value="{{ img.pk }}"><input type="hidden" name="action" value="delete"><button class="icon-btn" type="submit">{% icon "trash" label="Xóa ảnh" %}</button></form>
+      </div>
+      <form class="alt-form" method="post" action="{% url 'panel:product_images' product.pk %}">{% csrf_token %}<input type="hidden" name="image_id" value="{{ img.pk }}"><input type="hidden" name="action" value="alt">
+        <label class="sr-only" for="alt-{{ img.pk }}">Mô tả ảnh</label><input id="alt-{{ img.pk }}" name="alt" value="{{ img.alt }}" placeholder="Mô tả ảnh"><button class="btn btn-secondary btn-sm" type="submit">Lưu</button></form>
+      <div class="muted" style="font-size:12px;margin-top:4px">Ảnh {{ forloop.counter }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty">{% icon "image" %}<p>Chưa có ảnh. Ảnh sẽ được tự chuyển sang định dạng WEBP và giữ tỉ lệ vuông khi hiển thị.</p></div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h2>Xóa sản phẩm</h2>
+  {% if in_orders %}
+  <p class="muted">Sản phẩm đã có trong đơn hàng nên không thể xóa. Để ngừng bán, chuyển trạng thái sang <strong>Ẩn</strong>.</p>
+  {% else %}
+  <form method="post" action="{% url 'panel:product_delete' product.pk %}" data-confirm="Xóa vĩnh viễn sản phẩm này và toàn bộ ảnh? Không hoàn tác được.">
+    {% csrf_token %}<button class="btn btn-danger" type="submit">{% icon "trash" %} Xóa sản phẩm</button>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

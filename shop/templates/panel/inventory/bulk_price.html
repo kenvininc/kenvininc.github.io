@@ -1,0 +1,47 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Cập nhật giá hàng loạt{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Cập nhật giá hàng loạt</h1><div class="actions"><a class="btn btn-secondary" href="{% url 'panel:price_history' %}">Lịch sử giá</a></div></div>
+{% if not preview %}
+<div class="card" style="max-width:820px">
+  <p class="help-box">Bước 1: chọn nhóm sản phẩm và cách đổi giá → <strong>Xem trước</strong>. Bước 2: kiểm tra bảng giá cũ/mới → <strong>Xác nhận</strong>. Chưa xác nhận thì chưa có giá nào thay đổi.</p>
+  {% if form.non_field_errors %}<div class="alert alert-error" role="alert">{% icon "alert" %}<div>{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div></div>{% endif %}
+  <form method="post" novalidate>{% csrf_token %}
+    <input type="hidden" name="step" value="preview">
+    <div class="grid grid-3">
+      {% include "panel/_field.html" with field=form.category %}
+      {% include "panel/_field.html" with field=form.brand %}
+      {% include "panel/_field.html" with field=form.q %}
+    </div>
+    {% include "panel/_field.html" with field=form.operation %}
+    <div class="grid grid-2">
+      {% include "panel/_field.html" with field=form.amount %}
+      {% include "panel/_field.html" with field=form.rounding %}
+    </div>
+    {% include "panel/_field.html" with field=form.reason %}
+    <div class="form-actions"><button class="btn" type="submit" data-submit-once>Xem trước</button></div>
+  </form>
+</div>
+{% else %}
+<div class="card">
+  <h2>Xem trước: {{ preview.changed }} biến thể sẽ đổi giá</h2>
+  <p>Lý do: <strong>{{ preview.reason }}</strong></p>
+  <div class="table-wrap"><table class="table">
+    <thead><tr><th>Sản phẩm</th><th>SKU</th><th class="num">Giá bán hiện tại</th><th class="num">Giá bán mới</th><th class="num">Giá gốc hiện tại</th><th class="num">Giá gốc mới</th><th>Ghi chú</th></tr></thead>
+    <tbody>
+    {% for v, price, compare, warn in preview.rows %}
+      <tr><td>{{ v.product.name }}{% if v.value %} · {{ v.value }}{% endif %}</td><td class="mono">{{ v.sku }}</td>
+        <td class="num">{{ v.price|vnd }}</td><td class="num"><strong class="{% if price > v.price %}diff-up{% elif price < v.price %}diff-down{% endif %}">{{ price|vnd }}</strong></td>
+        <td class="num">{{ v.compare_at_price|vnd|default:"—" }}</td><td class="num">{{ compare|vnd|default:"—" }}</td>
+        <td>{% if warn %}<span class="badge badge-warn">{{ warn }}</span>{% elif price == v.price and compare == v.compare_at_price %}<span class="muted">Không đổi</span>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody></table></div>
+  <div class="form-actions" style="margin-top:14px">
+    {% if preview.changed %}
+    <form method="post" data-confirm="Xác nhận cập nhật giá {{ preview.changed }} biến thể?">{% csrf_token %}<input type="hidden" name="step" value="confirm"><button class="btn" type="submit" data-submit-once>Xác nhận cập nhật giá</button></form>
+    {% endif %}
+    <a class="btn btn-secondary" href="{% url 'panel:bulk_price' %}">Làm lại</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

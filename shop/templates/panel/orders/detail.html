@@ -1,0 +1,123 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Đơn {{ order.code }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Đơn <span class="mono">{{ order.code }}</span></h1>
+    <span class="badge badge-{{ order.status }}">{{ order.get_status_display }}</span>
+    <span class="badge badge-{{ order.payment_status }}">{{ order.get_payment_status_display }}</span>
+    <span class="muted">· Đặt lúc {{ order.created_at|date:"H:i d/m/Y" }}</span></div>
+  <div class="actions">
+    <a class="btn btn-secondary" href="{% url 'panel:order_print' order.pk %}?loai=dong-goi" target="_blank">{% icon "printer" %} Phiếu đóng gói</a>
+    <a class="btn btn-secondary" href="{% url 'panel:order_print' order.pk %}?loai=hoa-don" target="_blank">{% icon "printer" %} Phiếu giao hàng</a>
+    <a class="btn btn-secondary" href="{% url 'panel:orders' %}">Danh sách</a>
+  </div>
+</div>
+<div class="two-col">
+  <div>
+    <div class="card">
+      <h2>Sản phẩm (giá tại thời điểm đặt)</h2>
+      <div class="table-wrap" style="border:0"><table class="table">
+        <thead><tr><th></th><th>Sản phẩm</th><th>SKU</th><th class="num">Đơn giá</th><th class="num">SL</th><th class="num">Thành tiền</th></tr></thead>
+        <tbody>{% for it in order.items.all %}
+          <tr><td>{% if it.image_url %}<img class="thumb" src="{{ it.image_url }}" alt="">{% endif %}</td>
+            <td>{{ it.product_name }}{% if it.variant_label %}<br><span class="muted">{{ it.variant_label }}</span>{% endif %}</td>
+            <td class="mono">{{ it.sku }}</td>
+            <td class="num">{{ it.unit_price|vnd }}{% if it.compare_at_price %}<br><s class="muted">{{ it.compare_at_price|vnd }}</s>{% endif %}</td>
+            <td class="num">{{ it.quantity }}</td><td class="num">{{ it.line_total|vnd }}</td></tr>
+        {% endfor %}</tbody></table></div>
+      <dl class="totals">
+        <dt>Tiền hàng</dt><dd class="right">{{ order.subtotal|vnd }}</dd>
+        <dt>Giảm giá{% if order.coupon_code %} (mã {{ order.coupon_code }}){% endif %}</dt><dd class="right">-{{ order.discount_total|vnd }}</dd>
+        <dt>Phí giao hàng</dt><dd class="right">{{ order.shipping_fee|vnd }}</dd>
+        <dt class="grand">Tổng thanh toán</dt><dd class="right grand">{{ order.total|vnd }}</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h2>Khách hàng & giao hàng</h2>
+      <dl class="kv">
+        <dt>Người nhận</dt><dd>{{ order.customer_name }}</dd>
+        <dt>Điện thoại</dt><dd><a href="tel:{{ order.phone }}">{{ order.phone }}</a></dd>
+        <dt>Email</dt><dd>{{ order.email|default:"—" }}</dd>
+        <dt>Địa chỉ</dt><dd>{{ order.address|linebreaksbr }}</dd>
+        <dt>Ghi chú của khách</dt><dd>{{ order.customer_note|linebreaksbr|default:"—" }}</dd>
+        <dt>Thanh toán</dt><dd>{{ order.get_payment_method_display }}</dd>
+        <dt>Vận chuyển</dt><dd>{{ order.carrier|default:"—" }} {{ order.tracking_code }}</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h2>Lịch sử đơn hàng</h2>
+      <ul class="timeline">
+        {% for e in events %}
+        <li><div><strong>{{ e.get_kind_display }}</strong>
+          {% if e.kind == "status" %}: {{ status_labels|get_item:e.from_value }} → <strong>{{ status_labels|get_item:e.to_value }}</strong>
+          {% elif e.kind == "payment" %}: {{ pay_labels|get_item:e.from_value }} → <strong>{{ pay_labels|get_item:e.to_value }}</strong>
+          {% elif e.kind == "shipping" %}: {{ e.to_value|default:"(xóa)" }}{% endif %}</div>
+          {% if e.note %}<div>{{ e.note|linebreaksbr }}</div>{% endif %}
+          <div class="when">{{ e.created_at|date:"H:i d/m/Y" }} · {% if e.user %}{{ e.user.username }}{% elif e.kind == "created" %}Khách đặt online{% else %}Hệ thống{% endif %}</div></li>
+        {% empty %}<li>Chưa có lịch sử.</li>{% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div>
+    {% if can_manage %}
+    <div class="card">
+      <h2>Xử lý đơn</h2>
+      {% if next_statuses %}
+      <div class="status-actions">
+        {% for s, label in next_statuses %}
+        <form method="post" action="{% url 'panel:order_status' order.pk %}" {% if s == "cancelled" or s == "returned" %}data-confirm="Chuyển đơn sang “{{ label }}”?"{% endif %}>
+          {% csrf_token %}<input type="hidden" name="status" value="{{ s }}">
+          {% if s == "cancelled" %}
+          <div class="field"><label for="note-cancel">Lý do hủy (bắt buộc)</label><input id="note-cancel" type="text" name="note" maxlength="500" required></div>
+          <button class="btn btn-danger" type="submit" style="width:100%">Hủy đơn (hoàn tồn kho)</button>
+          {% elif s == "returned" %}
+          <div class="field-check"><input id="restock" type="checkbox" name="restock" value="1"><label for="restock">Đã nhận lại hàng, cộng lại tồn kho</label></div>
+          <div class="field"><label for="note-return">Ghi chú</label><input id="note-return" type="text" name="note" maxlength="500"></div>
+          <button class="btn btn-danger" type="submit" style="width:100%">Chuyển sang Hoàn/trả hàng</button>
+          {% else %}
+          <button class="btn" type="submit" style="width:100%" data-submit-once>Chuyển sang: {{ label }}</button>
+          {% endif %}
+        </form>
+        {% endfor %}
+      </div>
+      {% else %}<p class="muted">Đơn đã kết thúc, không còn bước xử lý.</p>{% endif %}
+      {% if order.status == "returned" and not order.stock_restored %}
+      <form method="post" action="{% url 'panel:order_restock' order.pk %}" style="margin-top:10px" data-confirm="Cộng lại tồn kho cho toàn bộ sản phẩm trong đơn?">{% csrf_token %}
+        <button class="btn btn-secondary" type="submit">Đã nhận lại hàng — nhập lại kho</button></form>
+      {% endif %}
+      {% if order.stock_restored %}<p class="muted" style="margin-top:8px">Tồn kho của đơn này đã được hoàn lại.</p>{% endif %}
+    </div>
+    {% endif %}
+
+    {% if can_pay %}
+    <div class="card">
+      <h2>Thanh toán</h2>
+      <p>Hiện tại: <span class="badge badge-{{ order.payment_status }}">{{ order.get_payment_status_display }}</span>{% if order.paid_at %} <span class="muted">({{ order.paid_at|date:"H:i d/m/Y" }})</span>{% endif %}</p>
+      {% if order.payment_method == "bank_transfer" and order.payment_status == "unpaid" %}<p class="help-box">Chỉ đánh dấu “Đã thanh toán” sau khi kiểm tra tài khoản ngân hàng đã nhận đúng số tiền {{ order.total|vnd }} với nội dung {{ order.code }}.</p>{% endif %}
+      {% for s, label in next_payments %}
+      <form method="post" action="{% url 'panel:order_payment' order.pk %}" style="margin-bottom:8px" data-confirm="Đổi trạng thái thanh toán sang “{{ label }}”?">{% csrf_token %}
+        <input type="hidden" name="payment_status" value="{{ s }}">
+        {% if s != "paid" %}<div class="field"><label for="pn-{{ s }}">Lý do (bắt buộc)</label><input id="pn-{{ s }}" type="text" name="note" maxlength="500" required></div>{% endif %}
+        <button class="btn {% if s == 'paid' %}{% else %}btn-secondary{% endif %}" type="submit" style="width:100%">Đánh dấu: {{ label }}</button></form>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if can_manage %}
+    <div class="card">
+      <h2>Vận chuyển</h2>
+      <form method="post" action="{% url 'panel:order_shipping' order.pk %}">{% csrf_token %}
+        {% for field in shipping_form %}{% include "panel/_field.html" %}{% endfor %}
+        <button class="btn btn-secondary" type="submit">Lưu vận đơn</button></form>
+    </div>
+    <div class="card">
+      <h2>Ghi chú nội bộ</h2>
+      <form method="post" action="{% url 'panel:order_note' order.pk %}">{% csrf_token %}
+        <div class="field"><label for="note">Ghi chú (khách không nhìn thấy)</label><textarea id="note" name="note" rows="3" maxlength="2000"></textarea></div>
+        <button class="btn btn-secondary" type="submit">Thêm ghi chú</button></form>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

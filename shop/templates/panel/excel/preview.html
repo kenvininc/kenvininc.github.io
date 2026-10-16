@@ -1,0 +1,43 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Xem trước nhập Excel{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Kết quả kiểm tra: {{ job.filename }}</h1><div class="actions"><a class="btn btn-secondary" href="{% url 'panel:import' %}">Tải file khác</a></div></div>
+{% if job.applied_at %}<div class="alert alert-success">{% icon "check" %} File đã được nhập lúc {{ job.applied_at|date:"H:i d/m/Y" }}.</div>{% endif %}
+{% if job.errors %}
+<div class="card">
+  <h2 style="color:var(--err)">{{ job.errors|length }} lỗi — chưa có dữ liệu nào được ghi</h2>
+  <p class="muted">Sửa các lỗi dưới đây trong file Excel rồi tải lên lại.</p>
+  <div class="table-wrap"><table class="table"><thead><tr><th class="num">Dòng</th><th>Cột</th><th>Lỗi</th></tr></thead><tbody>
+    {% for e in job.errors|slice:":500" %}<tr><td class="num">{% if e.row %}{{ e.row }}{% else %}—{% endif %}</td><td>{{ e.col }}</td><td>{{ e.msg }}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% if job.errors|length > 500 %}<p class="muted">Chỉ hiển thị 500 lỗi đầu tiên.</p>{% endif %}
+</div>
+{% else %}
+<div class="grid grid-3" style="margin-bottom:16px">
+  <div class="stat"><div class="label">Sản phẩm mới / cập nhật</div><div class="value">{{ job.summary.products_new }} / {{ job.summary.products_updated }}</div></div>
+  <div class="stat"><div class="label">Biến thể mới / cập nhật</div><div class="value">{{ job.summary.variants_new }} / {{ job.summary.variants_updated }}</div></div>
+  <div class="stat"><div class="label">Đổi giá / đổi tồn kho</div><div class="value">{{ job.summary.price_changes }} / {{ job.summary.stock_changes }}</div></div>
+</div>
+{% if job.plan.create_brands or job.plan.create_categories or job.plan.create_attributes %}
+<div class="alert alert-info">{% icon "info" %}<div>Sẽ tạo mới:
+  {% if job.plan.create_brands %}<br>Thương hiệu: {{ job.plan.create_brands|join:", " }}{% endif %}
+  {% if job.plan.create_categories %}<br>Danh mục: {{ job.plan.create_categories|join:", " }}{% endif %}
+  {% if job.plan.create_attributes %}<br>Loại biến thể: {{ job.plan.create_attributes|join:", " }}{% endif %}</div></div>
+{% endif %}
+<div class="card">
+  <h2>Chi tiết (tối đa 200 sản phẩm đầu)</h2>
+  <div class="table-wrap"><table class="table"><thead><tr><th class="num">Dòng</th><th>Mã SP</th><th>Tên</th><th>SKU</th><th>Biến thể</th><th class="num">Giá bán</th><th class="num">Giá gốc</th><th class="num">Tồn (hiện tại → mới)</th><th></th></tr></thead><tbody>
+    {% for r in rows %}<tr><td class="num">{{ r.row }}</td><td class="mono">{{ r.code }}</td><td>{{ r.name }}</td><td class="mono">{{ r.sku }}</td><td>{{ r.value }}</td>
+      <td class="num">{{ r.price|vnd }}</td><td class="num">{{ r.compare|vnd|default:"—" }}</td>
+      <td class="num">{% if r.variant_id %}{{ r.expected_stock }} → {% endif %}<strong>{{ r.stock }}</strong></td>
+      <td>{% if r.variant_id %}<span class="badge badge-info">Cập nhật</span>{% else %}<span class="badge badge-ok">Mới</span>{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% if not job.applied_at %}
+  <form method="post" style="margin-top:14px" data-confirm="Ghi dữ liệu từ file này vào hệ thống?">{% csrf_token %}
+    <button class="btn" type="submit" data-submit-once>Xác nhận nhập dữ liệu</button>
+    <span class="muted">Sản phẩm mới được tạo ở trạng thái theo cột “Trạng thái” (mặc định Nháp).</span>
+  </form>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

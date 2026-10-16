@@ -1,0 +1,20 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Danh mục{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Danh mục</h1><div class="actions"><a class="btn" href="{% url 'panel:category_add' %}">{% icon "plus" %} Thêm danh mục</a></div></div>
+<p class="muted">Danh mục gốc hiển thị trên thanh menu và mega menu; danh mục con hiển thị trong cột bên phải của mega menu.</p>
+<div class="table-wrap"><table class="table">
+  <thead><tr><th>Tên</th><th>Đường dẫn</th><th class="num">Sản phẩm</th><th>Hiển thị</th><th>Trang chủ</th><th class="num">Thứ tự</th></tr></thead>
+  <tbody>
+  {% for c in roots %}
+    <tr><td><a href="{% url 'panel:category_edit' c.pk %}"><strong>{{ c.name }}</strong></a></td><td class="muted mono">/danh-muc/{{ c.slug }}/</td><td class="num">{{ counts|get_item:c.pk }}</td>
+      <td>{% if c.is_active %}<span class="badge badge-ok">Bật</span>{% else %}<span class="badge">Tắt</span>{% endif %}</td><td>{% if c.show_on_home %}Có{% endif %}</td><td class="num">{{ c.sort_order }}</td></tr>
+    {% for s in c.children.all %}
+    <tr><td style="padding-left:32px">↳ <a href="{% url 'panel:category_edit' s.pk %}">{{ s.name }}</a></td><td class="muted mono">/danh-muc/{{ s.slug }}/</td><td class="num">{{ counts|get_item:s.pk }}</td>
+      <td>{% if s.is_active %}<span class="badge badge-ok">Bật</span>{% else %}<span class="badge">Tắt</span>{% endif %}</td><td>{% if s.show_on_home %}Có{% endif %}</td><td class="num">{{ s.sort_order }}</td></tr>
+    {% endfor %}
+  {% empty %}
+    <tr class="empty-row"><td colspan="6">Chưa có danh mục. <a href="{% url 'panel:category_add' %}">Thêm danh mục đầu tiên</a>.</td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{% endblock %}

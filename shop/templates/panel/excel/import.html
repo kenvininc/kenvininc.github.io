@@ -1,0 +1,28 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Nhập / xuất Excel{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Nhập / xuất sản phẩm bằng Excel</h1></div>
+<div class="two-col">
+  <div class="card">
+    <h2>Nhập từ Excel</h2>
+    <ol class="muted" style="padding-left:18px">
+      <li>Tải <a href="{% url 'panel:import_template' %}">file mẫu</a> (hoặc xuất danh sách hiện tại để sửa).</li>
+      <li>Điền mỗi dòng 1 biến thể (SKU). Xem sheet “Hướng dẫn” trong file.</li>
+      <li>Tải file lên → hệ thống kiểm tra và báo lỗi theo từng dòng, <strong>chưa ghi gì</strong>.</li>
+      <li>Xem trước kết quả → bấm Xác nhận để ghi.</li>
+    </ol>
+    {% if form.errors %}<div class="alert alert-error" role="alert">{% icon "alert" %}<div>Vui lòng kiểm tra lại.</div></div>{% endif %}
+    <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+      {% for field in form %}{% include "panel/_field.html" %}{% endfor %}
+      <div class="form-actions"><button class="btn" type="submit" data-submit-once>{% icon "upload" %} Kiểm tra file</button></div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Xuất Excel</h2>
+    <p class="muted">Xuất toàn bộ sản phẩm theo đúng định dạng file mẫu. Có thể sửa giá/tồn kho trong file rồi nhập lại.</p>
+    <p><a class="btn btn-secondary" href="{% url 'panel:export' %}">{% icon "download" %} Xuất danh sách sản phẩm</a></p>
+    <p><a class="btn btn-secondary" href="{% url 'panel:import_template' %}">{% icon "download" %} Tải file mẫu trống</a></p>
+    <p class="help-box">Ảnh sản phẩm không nhập qua Excel. Upload ảnh trong trang sửa sản phẩm.</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Cấu hình cửa hàng{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Cấu hình cửa hàng</h1></div>
+{% if form.errors %}<div class="alert alert-error" role="alert">{% icon "alert" %}<div>Vui lòng kiểm tra lại các ô được đánh dấu.</div></div>{% endif %}
+<form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+<div class="two-col">
+  <div>
+    <div class="card"><h2>Thông tin shop</h2>
+      <div class="grid grid-2">{% include "panel/_field.html" with field=form.shop_name %}{% include "panel/_field.html" with field=form.tagline %}</div>
+      {% if obj.logo %}<p><img src="{{ obj.logo.url }}" alt="Logo hiện tại" style="max-height:70px"></p>{% include "panel/_field.html" with field=form.remove_logo %}{% endif %}
+      {% include "panel/_field.html" with field=form.logo_upload %}
+      {% include "panel/_field.html" with field=form.primary_color %}
+    </div>
+    <div class="card"><h2>Liên hệ</h2>
+      <div class="grid grid-2">{% include "panel/_field.html" with field=form.hotline %}{% include "panel/_field.html" with field=form.zalo %}</div>
+      <div class="grid grid-2">{% include "panel/_field.html" with field=form.email %}{% include "panel/_field.html" with field=form.opening_hours %}</div>
+      {% include "panel/_field.html" with field=form.address %}
+      <div class="grid grid-2">{% include "panel/_field.html" with field=form.facebook_url %}{% include "panel/_field.html" with field=form.instagram_url %}</div>
+      <div class="grid grid-2">{% include "panel/_field.html" with field=form.tiktok_url %}{% include "panel/_field.html" with field=form.youtube_url %}</div>
+    </div>
+    <div class="card"><h2>Hiển thị ở trang sản phẩm</h2>
+      <p class="help-box">Chỉ ghi chính sách shop thực sự áp dụng. Để trống thì không hiển thị.</p>
+      {% include "panel/_field.html" with field=form.shipping_policy_summary %}
+      {% include "panel/_field.html" with field=form.return_policy_summary %}
+    </div>
+    <div class="card"><h2>SEO trang chủ</h2>
+      {% include "panel/_field.html" with field=form.seo_title %}{% include "panel/_field.html" with field=form.seo_description %}
+    </div>
+  </div>
+  <div>
+    <div class="card"><h2>Giao hàng</h2>
+      {% include "panel/_field.html" with field=form.shipping_flat_fee %}
+      {% include "panel/_field.html" with field=form.free_shipping_threshold %}
+      {% include "panel/_field.html" with field=form.shipping_note %}
+      <p class="help">Phiên bản hiện tại tính phí đồng giá toàn quốc. Chưa kết nối API đơn vị vận chuyển; mã vận đơn nhập tay trong đơn hàng.</p>
+    </div>
+    <div class="card"><h2>Thanh toán</h2>
+      {% include "panel/_field.html" with field=form.cod_enabled %}
+      {% include "panel/_field.html" with field=form.bank_transfer_enabled %}
+      {% include "panel/_field.html" with field=form.bank_name %}
+      {% include "panel/_field.html" with field=form.bank_account_number %}
+      {% include "panel/_field.html" with field=form.bank_account_name %}
+      {% include "panel/_field.html" with field=form.bank_transfer_hold_hours %}
+      <p class="help">Chưa tích hợp cổng thanh toán online. Đơn chuyển khoản do người quản trị tự đối chiếu và đánh dấu “Đã thanh toán”.</p>
+    </div>
+    <div class="card"><h2>Kho & đặt hàng</h2>
+      {% include "panel/_field.html" with field=form.low_stock_threshold %}
+      {% include "panel/_field.html" with field=form.max_qty_per_item %}
+    </div>
+  </div>
+</div>
+<div class="sticky-actions form-actions"><button class="btn" type="submit" data-submit-once>Lưu cấu hình</button></div>
+</form>
+{% endblock %}

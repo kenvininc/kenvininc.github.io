@@ -1,0 +1,15 @@
+{% extends "panel/base.html" %}{% load shop %}
+{% block title %}Thương hiệu{% endblock %}
+{% block content %}
+<div class="page-head"><h1>Thương hiệu</h1><div class="actions"><a class="btn" href="{% url 'panel:brand_add' %}">{% icon "plus" %} Thêm thương hiệu</a></div></div>
+<div class="table-wrap"><table class="table">
+  <thead><tr><th></th><th>Tên</th><th>Đường dẫn</th><th class="num">Sản phẩm</th><th>Hiển thị</th></tr></thead>
+  <tbody>
+  {% for b in brands %}
+    <tr><td>{% if b.logo %}<img class="thumb" src="{{ b.logo.url }}" alt="">{% endif %}</td><td><a href="{% url 'panel:brand_edit' b.pk %}"><strong>{{ b.name }}</strong></a></td><td class="muted mono">/thuong-hieu/{{ b.slug }}/</td><td class="num">{{ b.n }}</td>
+      <td>{% if b.is_active %}<span class="badge badge-ok">Bật</span>{% else %}<span class="badge">Tắt</span>{% endif %}</td></tr>
+  {% empty %}
+    <tr class="empty-row"><td colspan="5">Chưa có thương hiệu.</td></tr>
+  {% endfor %}
+  </tbody></table></div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "store/base.html" %}{% load shop %}
+{% block title %}Tra cứu đơn hàng | {{ site.shop_name }}{% endblock %}
+{% block content %}
+<div class="container" style="max-width:520px">
+  <h1 class="page-title">Tra cứu đơn hàng</h1>
+  <p class="help">Nhập mã đơn hàng và số điện thoại đã dùng khi đặt hàng.</p>
+  {% if error %}<div class="alert alert-error" role="alert">{% icon "alert" %}<div>{{ error }}</div></div>{% endif %}
+  <form method="post" class="panel-box" novalidate>
+    {% csrf_token %}
+    {% include "store/_field.html" with field=form.code %}
+    {% include "store/_field.html" with field=form.phone %}
+    <button class="btn btn-block" type="submit" data-submit-once>{% icon "search" %} Tra cứu</button>
+  </form>
+</div>
+{% endblock %}
