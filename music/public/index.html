@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dailoc Music</title>
+  <meta name="theme-color" content="#0e0f13">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Music">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <!-- Login -->
+  <section id="login" class="login" hidden>
+    <form id="loginForm" class="login-card">
+      <img src="/icons/icon-192.png" alt="" width="72" height="72">
+      <h1>Dailoc Music</h1>
+      <input id="password" type="password" autocomplete="current-password" placeholder="Mật khẩu" required>
+      <button type="submit" class="btn-primary">Đăng nhập</button>
+      <p id="loginErr" class="err" role="alert"></p>
+    </form>
+  </section>
+
+  <!-- App -->
+  <div id="app" hidden>
+    <header class="top">
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 3a7.5 7.5 0 0 1 5.96 12.05l4.25 4.24-1.42 1.42-4.24-4.25A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z"/></svg>
+        <input id="q" type="search" placeholder="Tìm bài, ca sĩ, album" autocomplete="off">
+      </div>
+      <button id="menuBtn" class="icon-btn" aria-label="Menu">
+        <svg viewBox="0 0 24 24"><path d="M12 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/></svg>
+      </button>
+      <div id="menu" class="menu" hidden>
+        <button data-act="rescan">Quét lại thư viện</button>
+        <button data-act="logout">Đăng xuất</button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="songs" aria-selected="true">Bài hát</button>
+      <button role="tab" data-tab="albums">Album</button>
+      <button role="tab" data-tab="artists">Ca sĩ</button>
+      <button role="tab" data-tab="upload">Upload</button>
+    </nav>
+
+    <main id="main">
+      <div id="filterBar" class="filter-bar" hidden>
+        <span id="filterLabel"></span>
+        <button id="clearFilter" class="chip">✕ Bỏ lọc</button>
+      </div>
+
+      <section data-view="songs">
+        <div class="list-actions">
+          <button id="playAll" class="btn-primary small">▶ Phát tất cả</button>
+          <button id="shuffleAll" class="btn small">⤮ Trộn bài</button>
+          <span id="count" class="muted"></span>
+        </div>
+        <ul id="songList" class="songs"></ul>
+        <p id="empty" class="empty" hidden>Chưa có bài nào. Vào tab <b>Upload</b> để thêm nhạc.</p>
+      </section>
+
+      <section data-view="albums" hidden><div id="albumGrid" class="grid"></div></section>
+      <section data-view="artists" hidden><ul id="artistList" class="plain-list"></ul></section>
+
+      <section data-view="upload" hidden>
+        <label id="drop" class="drop">
+          <input id="fileInput" type="file" multiple accept="audio/*,.mp3,.m4a,.aac,.flac,.wav,.ogg,.opus,.aiff">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 16V7.83l-3.59 3.58L6 10l6-6 6 6-1.41 1.41L13 7.83V16h-2Zm-6 4v-2h14v2H5Z"/></svg>
+          <strong>Chọn file nhạc</strong>
+          <span class="muted">hoặc kéo thả vào đây (mp3, m4a, flac, wav...)</span>
+        </label>
+        <ul id="uploadList" class="uploads"></ul>
+      </section>
+    </main>
+
+    <!-- Mini player -->
+    <div id="mini" class="mini" hidden>
+      <div class="mini-progress"><div id="miniBar"></div></div>
+      <button id="miniOpen" class="mini-info">
+        <img id="miniArt" alt="">
+        <span class="mini-text"><b id="miniTitle"></b><span id="miniArtist" class="muted"></span></span>
+      </button>
+      <button id="miniPlay" class="icon-btn big" aria-label="Play/Pause"></button>
+      <button id="miniNext" class="icon-btn" aria-label="Bài tiếp">
+        <svg viewBox="0 0 24 24"><path d="M6 18V6l8.5 6L6 18Zm10 0V6h2v12h-2Z"/></svg>
+      </button>
+    </div>
+
+    <!-- Full player -->
+    <div id="player" class="player" hidden>
+      <button id="playerClose" class="icon-btn" aria-label="Đóng">
+        <svg viewBox="0 0 24 24"><path d="m12 15.4-6-6L7.4 8l4.6 4.6L16.6 8 18 9.4l-6 6Z"/></svg>
+      </button>
+      <img id="bigArt" class="big-art" alt="">
+      <div class="big-meta">
+        <h2 id="bigTitle"></h2>
+        <p id="bigArtist" class="muted"></p>
+      </div>
+      <div class="seek">
+        <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Vị trí">
+        <div class="times"><span id="tCur">0:00</span><span id="tDur">0:00</span></div>
+      </div>
+      <div class="controls">
+        <button id="btnShuffle" class="icon-btn toggle" aria-label="Trộn bài">
+          <svg viewBox="0 0 24 24"><path d="M14.83 13.41 13.42 14.82l3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13ZM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5Zm-3.92 5.17L5.41 4 4 5.41l5.17 5.17 1.41-1.41Z"/></svg>
+        </button>
+        <button id="btnPrev" class="icon-btn xl" aria-label="Bài trước">
+          <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6V6Zm3.5 6 8.5 6V6l-8.5 6Z"/></svg>
+        </button>
+        <button id="btnPlay" class="play-btn" aria-label="Play/Pause"></button>
+        <button id="btnNext" class="icon-btn xl" aria-label="Bài tiếp">
+          <svg viewBox="0 0 24 24"><path d="M6 18V6l8.5 6L6 18Zm10 0V6h2v12h-2Z"/></svg>
+        </button>
+        <button id="btnRepeat" class="icon-btn toggle" aria-label="Lặp lại">
+          <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7Zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4Z"/></svg>
+          <span id="repeatOne" class="badge" hidden>1</span>
+        </button>
+      </div>
+      <h3 class="queue-title">Danh sách chờ</h3>
+      <ul id="queueList" class="songs queue"></ul>
+    </div>
+
+    <div id="toast" class="toast" hidden></div>
+  </div>
+
+  <audio id="audio" preload="auto" playsinline></audio>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

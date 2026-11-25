@@ -1,0 +1,18 @@
+services:
+  music:
+    build: .
+    image: dailoc-music:latest
+    container_name: dailoc-music
+    restart: unless-stopped
+    # UID:GID that owns the music folder on the NAS (check with `id <user>` over SSH).
+    # Synology example: "1026:100". Remove this line to run as the image's default user (1000:1000).
+    user: "${PUID:-1000}:${PGID:-1000}"
+    env_file: .env
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      # Only reachable via the reverse proxy / tunnel. Bind to 127.0.0.1 if the proxy runs on the same NAS.
+      - "${HOST_PORT:-8095}:3000"
+    volumes:
+      - ${MUSIC_PATH:-./music}:/music      # your music share on the NAS
+      - ./data:/data                       # library cache, cover art, session secret
