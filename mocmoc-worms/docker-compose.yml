@@ -1,0 +1,28 @@
+services:
+  game:
+    build: .
+    image: mocmoc-worms:latest
+    container_name: mocmoc-worms
+    restart: unless-stopped
+    init: true
+    ports:
+      - "8788:3000"
+    environment:
+      PORT: "3000"
+      # bán kính map (world units). 3000 hợp với ~20-40 người.
+      WORLD_RADIUS: "3000"
+      # số rắn tối thiểu trên map; thiếu người thì bot bù vào
+      BOTS: "16"
+      # số người chơi thật tối đa cùng lúc
+      MAX_PLAYERS: "60"
+      MAX_CONN_PER_IP: "6"
+      # 1 = lấy IP client từ CF-Connecting-IP / X-Forwarded-For (chạy sau nginx/Cloudflare)
+      TRUST_PROXY: "1"
+      # WebSocket luôn cho phép same-origin; thêm domain khác ở đây nếu cần (phân cách bằng dấu phẩy)
+      ALLOWED_ORIGINS: "https://mocmoc.dev"
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

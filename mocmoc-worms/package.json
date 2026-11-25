@@ -1,0 +1,19 @@
+{
+  "name": "mocmoc-worms",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multiplayer browser worm game",
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node test/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="Game giun nhiều người chơi trên trình duyệt. Ăn chấm sáng, lớn lên, đừng đâm đầu vào ai.">
+  <title>mocmoc worms</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" hidden>
+    <div id="board">
+      <h3>Top</h3>
+      <ol id="board-list"></ol>
+    </div>
+    <div id="stats">
+      <div><span class="lbl">Độ dài</span> <b id="score">0</b></div>
+      <div><span class="lbl">Hạng</span> <b id="rank">-</b></div>
+    </div>
+    <div id="feed"></div>
+    <button id="boost-btn" type="button" aria-label="Tăng tốc">⚡</button>
+  </div>
+
+  <div id="net"></div>
+
+  <div id="menu" class="overlay">
+    <div class="panel">
+      <h1>mocmoc<span>worms</span></h1>
+      <p class="tag">Ăn chấm sáng, lớn lên, đừng đâm đầu vào ai.</p>
+      <input id="name" maxlength="16" placeholder="Tên của bạn" autocomplete="off" spellcheck="false" enterkeyhint="go">
+      <div id="skins" role="radiogroup" aria-label="Chọn màu"></div>
+      <button id="play" type="button" disabled>Đang kết nối…</button>
+      <p class="help">
+        <span class="desk">Chuột để lái · giữ chuột trái hoặc Space để tăng tốc</span>
+        <span class="touch">Chạm và kéo để lái · giữ nút ⚡ để tăng tốc</span>
+      </p>
+      <p id="online"></p>
+    </div>
+  </div>
+
+  <div id="dead" class="overlay" hidden>
+    <div class="panel">
+      <h2>Toang rồi!</h2>
+      <p id="dead-msg"></p>
+      <div id="dead-score" class="big"></div>
+      <p id="dead-extra" class="muted"></p>
+      <button id="again" type="button">Chơi lại</button>
+      <button id="to-menu" type="button" class="link">Đổi tên / màu</button>
+    </div>
+  </div>
+
+  <div id="conn" class="overlay" hidden>
+    <div class="panel"><p id="conn-msg">Đang kết nối…</p></div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
