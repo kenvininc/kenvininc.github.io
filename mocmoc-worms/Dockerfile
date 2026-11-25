@@ -9,6 +9,10 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY server ./server
 COPY public ./public
 
+# Files copied from a Synology share often keep owner-only modes (ACL),
+# which the non-root "node" user can't read. Make the app world-readable.
+RUN chmod -R a+rX /app
+
 USER node
 EXPOSE 3000
 
