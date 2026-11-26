@@ -21,8 +21,8 @@ const MAX_UPLOAD_MB = Number(process.env.MAX_UPLOAD_MB || 500);
 const SESSION_DAYS = Number(process.env.SESSION_DAYS || 180);
 const RESCAN_MINUTES = Number(process.env.RESCAN_MINUTES || 0); // 0 = no periodic rescan
 
-if (!APP_PASSWORD) {
-  console.error('FATAL: APP_PASSWORD is not set. Refusing to start without a password.');
+if (!APP_PASSWORD || APP_PASSWORD === 'doi-mat-khau-o-day' || APP_PASSWORD === 'change-me-to-a-long-password') {
+  console.error('FATAL: APP_PASSWORD is not set or still the example value. Set it in docker-compose.yml.');
   process.exit(1);
 }
 
