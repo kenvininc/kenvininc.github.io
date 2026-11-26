@@ -219,7 +219,13 @@ function rateLimited(ip) {
 
 // ---------- app ----------
 const app = express();
-app.set('trust proxy', process.env.TRUST_PROXY || 'loopback, linklocal, uniquelocal');
+// TRUST_PROXY: number of proxy hops ("1", "2"), "true"/"false", or a list of IPs/subnets.
+// Default trusts proxies on loopback / private networks (Synology reverse proxy, nginx on LAN).
+const tp = (process.env.TRUST_PROXY || '').trim();
+app.set('trust proxy',
+  !tp ? 'loopback, linklocal, uniquelocal'
+    : /^\d+$/.test(tp) ? Number(tp)
+    : tp === 'true' ? true : tp === 'false' ? false : tp);
 app.disable('x-powered-by');
 app.use((req, res, next) => {
   res.set('X-Content-Type-Options', 'nosniff');

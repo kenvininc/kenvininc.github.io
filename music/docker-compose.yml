@@ -4,15 +4,35 @@ services:
     image: dailoc-music:latest
     container_name: dailoc-music
     restart: unless-stopped
-    # UID:GID that owns the music folder on the NAS (check with `id <user>` over SSH).
-    # Synology example: "1026:100". Remove this line to run as the image's default user (1000:1000).
-    user: "${PUID:-1000}:${PGID:-1000}"
-    env_file: .env
-    environment:
-      TZ: Asia/Ho_Chi_Minh
+    init: true
+    # uid:gid của user DSM có quyền ghi vào thư mục nhạc và ./data (SSH: id <user>)
+    user: "1026:100"
     ports:
-      # Only reachable via the reverse proxy / tunnel. Bind to 127.0.0.1 if the proxy runs on the same NAS.
-      - "${HOST_PORT:-8095}:3000"
+      - "8789:3000"
+    environment:
+      PORT: "3000"
+      # mật khẩu đăng nhập web. Có ký tự $ thì viết thành $$
+      APP_PASSWORD: "doi-mat-khau-o-day"
+      TZ: "Asia/Ho_Chi_Minh"
+      # dung lượng tối đa mỗi file upload (MB)
+      MAX_UPLOAD_MB: "500"
+      # file upload qua web lưu vào /music/<UPLOAD_SUBDIR>
+      UPLOAD_SUBDIR: "Uploads"
+      # tự quét lại thư mục nhạc mỗi N phút (0 = chỉ quét lúc khởi động + nút "Quét lại")
+      RESCAN_MINUTES: "60"
+      # số ngày giữ đăng nhập
+      SESSION_DAYS: "180"
+      # để trống = tin proxy trong LAN/localhost (Synology reverse proxy, nginx).
+      # chạy sau Cloudflare + reverse proxy thì có thể đặt "2" để lấy đúng IP client
+      # TRUST_PROXY: "1"
     volumes:
-      - ${MUSIC_PATH:-./music}:/music      # your music share on the NAS
-      - ./data:/data                       # library cache, cover art, session secret
+      # thư mục nhạc trên NAS
+      - /volume1/music:/music
+      # cache thư viện, ảnh bìa, session secret
+      - ./data:/data
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

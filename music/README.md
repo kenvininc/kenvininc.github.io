@@ -9,42 +9,26 @@ Web nghe nhạc tự host trên NAS: upload nhạc từ điện thoại/PC, nghe
 - Stream có HTTP Range (tua được, iOS bắt buộc cần cái này).
 - Hỗ trợ: mp3, m4a/aac, flac, wav, aiff, ogg/opus. Trên iPhone, chắc ăn nhất là **mp3 / m4a (AAC)**. FLAC thường chạy được trên iOS mới, ogg/opus tùy phiên bản iOS. App không transcode.
 
-## Cài đặt trên NAS
+## Cài đặt trên NAS (Synology Container Manager)
 
-Cần SSH vào NAS (hoặc dùng Container Manager / Portainer với nội dung `docker-compose.yml` tương tự).
+Cấu hình nằm hết trong `docker-compose.yml` (không dùng `.env`), giống các project khác trên NAS.
 
-```bash
-git clone -b claude/eager-faraday-hxtks0 https://github.com/kenvininc/kenvininc.github.io.git
-cd kenvininc.github.io/music
-cp .env.example .env
-```
+1. Giải nén zip vào thư mục project, ví dụ `/volume1/docker/music` (nên tránh `/volume1/web` nếu Web Station có thể serve thư mục đó, vì compose chứa mật khẩu).
+2. File Station: tạo thư mục `data` trong thư mục project. Thư mục nhạc (vd shared folder `/volume1/music`) phải tồn tại sẵn.
+3. Sửa `docker-compose.yml`:
 
-Sửa `.env`:
-
-| Biến | Ý nghĩa |
+| Chỗ cần sửa | Ý nghĩa |
 |---|---|
-| `APP_PASSWORD` | Mật khẩu đăng nhập (bắt buộc, đặt dài) |
-| `MUSIC_PATH` | Đường dẫn share nhạc trên NAS, vd `/volume1/music` |
-| `PUID` / `PGID` | UID/GID có quyền đọc ghi `MUSIC_PATH` (`id <user>` để xem) |
-| `HOST_PORT` | Port publish ra ngoài, mặc định `8095` |
-| `MAX_UPLOAD_MB` | Giới hạn mỗi file upload, mặc định 500 |
-| `RESCAN_MINUTES` | Tự quét lại thư mục nhạc (0 = tắt) |
+| `user: "1026:100"` | uid:gid của user DSM có quyền ghi thư mục nhạc và `data` (SSH: `id <user>`) |
+| `APP_PASSWORD` | Mật khẩu đăng nhập web. Có `$` thì viết `$$` |
+| `ports: "8789:3000"` | Đổi số bên trái nếu 8789 đã bị dùng |
+| `/volume1/music:/music` | Đường dẫn thư mục nhạc thật |
+| `MAX_UPLOAD_MB`, `RESCAN_MINUTES`, `SESSION_DAYS` | Tùy chọn |
 
-```bash
-mkdir -p data
-sudo chown ${PUID}:${PGID} data     # thay bằng số thật, vd: sudo chown 1026:100 data
-docker compose up -d --build
-docker compose logs -f
-```
+4. Container Manager → Project → Create → chọn thư mục project, dùng `docker-compose.yml` có sẵn → Build.
+5. Log có `Dailoc Music listening on :3000` và `Scan done: N tracks` là ổn. Thử nội bộ: `http://<IP-NAS>:8789`.
 
-Thấy dòng `Dailoc Music listening on :3000` và `Scan done: N tracks` là ổn. Thử nội bộ: `http://<IP-NAS>:8095`.
-
-Update sau này:
-
-```bash
-git pull
-docker compose up -d --build
-```
+Update sau này: thay file mới vào thư mục project (giữ nguyên `data/` và compose đã sửa), rồi Project → Action → Build lại.
 
 ## Public ra music.dailoc.dev
 
@@ -54,7 +38,7 @@ Chọn 1 trong các cách, tùy NAS đang dùng gì:
 
 **Synology Reverse Proxy** (Control Panel → Login Portal → Advanced → Reverse Proxy):
 - Source: HTTPS, `music.dailoc.dev`, port 443
-- Destination: HTTP, `localhost`, port `8095`
+- Destination: HTTP, `localhost`, port `8789`
 - Cert Let's Encrypt cho `music.dailoc.dev` (Control Panel → Security → Certificate), gán vào entry này.
 
 **Nginx / Nginx Proxy Manager**, phần quan trọng:
@@ -66,9 +50,9 @@ proxy_set_header X-Forwarded-Proto $scheme;
 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 ```
 
-**Cloudflare Tunnel**: trỏ `music.dailoc.dev` → `http://<IP-NAS>:8095`. Lưu ý gói Free giới hạn body request khoảng 100 MB, app đã upload từng file một nên mp3/m4a bình thường không bị ảnh hưởng, chỉ file FLAC/WAV rất lớn mới dính.
+**Cloudflare Tunnel**: trỏ `music.dailoc.dev` → `http://<IP-NAS>:8789`. Lưu ý gói Free giới hạn body request khoảng 100 MB, app đã upload từng file một nên mp3/m4a bình thường không bị ảnh hưởng, chỉ file FLAC/WAV rất lớn mới dính.
 
-App tin header `X-Forwarded-*` từ IP private (`TRUST_PROXY` mặc định `loopback, linklocal, uniquelocal`). Nếu proxy nằm ở IP public khác thì set `TRUST_PROXY` cho đúng.
+App tin header `X-Forwarded-*` từ proxy trong LAN/localhost (mặc định). `TRUST_PROXY` nhận số hop (`"1"`, `"2"`), `"true"`, hoặc danh sách IP/subnet. Chỉ ảnh hưởng IP dùng cho giới hạn đăng nhập sai.
 
 ## Dùng trên iPhone + CarPlay
 
@@ -99,6 +83,5 @@ music/
 ├── server.js            # API: login, upload, list, stream (Range), cover, scan
 ├── public/              # PWA: index.html, app.js, style.css, manifest, icons
 ├── Dockerfile
-├── docker-compose.yml
-└── .env.example
+└── docker-compose.yml
 ```
