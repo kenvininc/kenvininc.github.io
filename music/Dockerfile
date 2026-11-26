@@ -7,11 +7,14 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN chmod a+r package.json package-lock.json \
+ && npm ci --omit=dev && npm cache clean --force
 COPY server.js ./
 COPY public ./public
-
-RUN mkdir -p /music /data && chown node:node /music /data
+# Files copied from a NAS share can keep restrictive modes (e.g. 0600 owned by root).
+# The container runs as an arbitrary uid (compose `user:`), so make the app world-readable.
+RUN chmod -R a+rX /app \
+ && mkdir -p /music /data && chown node:node /music /data
 USER node
 
 EXPOSE 3000
